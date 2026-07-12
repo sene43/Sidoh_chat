@@ -1,0 +1,19 @@
+{
+  "name": "紫堂研究室",
+  "short_name": "紫堂",
+  "description": "紫堂さんとのチャット",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#180f16",
+  "theme_color": "#180f16",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
