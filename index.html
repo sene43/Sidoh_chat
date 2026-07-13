@@ -221,17 +221,26 @@
     background:rgba(24,15,22,.9);
     border-top:1px solid rgba(183,110,121,.18);
   }
+  #toolBtns{display:flex;flex:0 0 auto}
   #photoBtn,#diaryBtn,#attachBtn,#memoryBtn{
     flex:0 0 auto;
     width:33px;height:46px;border:none;background:none;
     color:var(--ink-dim);font-size:19px;cursor:pointer;padding:0;
   }
+  #expandBtn{
+    display:none;flex:0 0 auto;
+    width:28px;height:46px;border:none;background:none;
+    color:var(--ink-dim);font-size:24px;cursor:pointer;padding:0;line-height:1;
+  }
+  #composer.compact #toolBtns{display:none}
+  #composer.compact #expandBtn{display:block}
   #attachPreview{
     display:flex;align-items:center;gap:10px;
     padding:8px 14px;
     background:rgba(183,110,121,.1);
     border-top:1px solid rgba(183,110,121,.25);
   }
+  #attachPreview[hidden]{display:none !important}
   #attachPreview img{
     width:44px;height:44px;object-fit:cover;border-radius:10px;
   }
@@ -359,6 +368,7 @@
     <div class="partner-sub" id="headerSub">おや、いらっしゃい</div>
   </div>
   <div class="header-spacer"></div>
+  <button class="icon-btn" id="modeBtn" aria-label="世界観モード切替">📱</button>
   <button class="icon-btn" id="openSearch" aria-label="メッセージ検索">🔎</button>
   <button class="icon-btn" id="openThreads" aria-label="話題を切り替える">💬</button>
   <button class="icon-btn" id="openSettings" aria-label="設定">⚙︎</button>
@@ -375,10 +385,13 @@
 
 <div id="composer">
   <input type="file" id="imgInput" accept="image/*" hidden>
-  <button id="attachBtn" aria-label="写真を見せる" title="写真を見せる">🖼</button>
-  <button id="photoBtn" aria-label="写真をリクエスト" title="写真を送ってもらう">📷</button>
-  <button id="diaryBtn" aria-label="日記を書いてもらう" title="今日の日記を書いてもらう">📖</button>
-  <button id="memoryBtn" aria-label="今日のことを思い出に追加" title="今日のことを思い出に追加">💭</button>
+  <button id="expandBtn" aria-label="ボタンを表示">›</button>
+  <div id="toolBtns">
+    <button id="attachBtn" aria-label="写真を見せる" title="写真を見せる">🖼</button>
+    <button id="photoBtn" aria-label="写真をリクエスト" title="写真を送ってもらう">📷</button>
+    <button id="diaryBtn" aria-label="日記を書いてもらう" title="今日の日記を書いてもらう">📖</button>
+    <button id="memoryBtn" aria-label="今日のことを思い出に追加" title="今日のことを思い出に追加">💭</button>
+  </div>
   <textarea id="input" rows="1" placeholder="メッセージを書く…"></textarea>
   <button id="send" aria-label="送信">↑</button>
 </div>
@@ -413,17 +426,29 @@
   </div>
 
   <div class="field">
+    <label for="oaKey">OpenAI APIキー（ChatGPT・任意）</label>
+    <input type="password" id="oaKey" placeholder="sk-…" autocomplete="off">
+    <div class="hint">gpt系モデルや画像生成（gpt-image-1）を使う時だけ必要。platform.openai.com で取得（従量課金）。</div>
+  </div>
+
+  <div class="field">
+    <label for="antKey">Anthropic APIキー（Claude・任意）</label>
+    <input type="password" id="antKey" placeholder="sk-ant-…" autocomplete="off">
+    <div class="hint">claude系モデルを使う時だけ必要。console.anthropic.com で取得（従量課金）。</div>
+  </div>
+
+  <div class="field">
     <label for="modelSel">会話モデル</label>
     <select id="modelSel"></select>
     <input type="text" id="model" placeholder="モデル名を手入力（例: gemini-2.5-flash）" style="margin-top:8px" hidden>
     <button type="button" class="btn line" id="fetchModelsBtn" style="margin-top:8px;padding:9px;font-size:13px">🔄 使えるモデル一覧を取得</button>
-    <div class="hint">迷ったら gemini-2.5-flash。Gemma 4（gemma-4-31b-it）は無料枠が1日約1500回と多めでおしゃべり向き🆓 🔄を押すとAPIキーで使えるモデルを自動でリスト化するよ（キー保存後にどうぞ）。</div>
+    <div class="hint">迷ったら gemini-2.5-flash。gpt〜はOpenAIキー、claude〜はAnthropicキーで動くよ（モデル名の頭で自動判別）。🔄はGeminiの一覧を取得（Geminiキー保存後にどうぞ）。</div>
   </div>
 
   <div class="field">
     <label for="imgModel">画像モデル名</label>
     <input type="text" id="imgModel" placeholder="gemini-2.5-flash-image">
-    <div class="hint">📷ボタンで使うモデル。画像は無料枠が少なめなので使いすぎ注意⚠️ 生成画像はページを閉じると消えます。</div>
+    <div class="hint">📷ボタンで使うモデル。gemini-2.5-flash-image（Geminiキー・要支払い設定）か gpt-image-1（OpenAIキー）が使えるよ。生成画像はページを閉じると消えます。</div>
   </div>
 
   <div class="field">
@@ -511,6 +536,7 @@
   <button class="btn line" id="exportBtn">📜 この話題を読み物として保存</button>
   <input type="file" id="restoreInput" accept="application/json,.json" hidden>
   <div class="hint">バックアップにはAPIキーも含まれるから、ファイルは人に送らず大切に保管してね🔐</div>
+  <div class="hint" id="storageMeter" style="margin-top:8px"></div>
   <button class="btn ghost" id="clearBtn">この話題の履歴を消す</button>
 </div>
 
@@ -523,6 +549,8 @@
 
   const LS = {
     key:   KP + 'apikey',
+    oaKey: KP + 'oakey',
+    antKey: KP + 'antkey',
     model: KP + 'model',
     modelList: KP + 'modellist',
     safety: KP + 'safety',
@@ -606,6 +634,20 @@
   }
 
   function curThread(){ return threads.find(t => t.id === curId); }
+
+  const modeBtn = document.getElementById('modeBtn');
+  function updateModeBtn(){
+    const together = get(LS.world,'app') === 'together';
+    modeBtn.textContent = together ? '🏠' : '📱';
+    modeBtn.title = together ? '今：同じ家で一緒にいる（タップでメッセージモードへ）' : '今：メッセージでやりとり（タップで一緒にいるモードへ）';
+  }
+  modeBtn.addEventListener('click', () => {
+    const together = get(LS.world,'app') === 'together';
+    localStorage.setItem(LS.world, together ? 'app' : 'together');
+    updateModeBtn();
+    const sel = document.getElementById('worldSel');
+    if (sel) sel.value = get(LS.world,'app');
+  });
 
   function updateHeader(){
     document.getElementById('headerName').textContent = get(LS.name,'紫堂');
@@ -742,7 +784,7 @@
     }
     out += '\n\n【リンクのルール】動画やサイトを勧める時、URLを記憶から創作してはいけない（存在しないリンクになる）。YouTubeの動画を勧める時は、必ず https://www.youtube.com/results?search_query=検索キーワード の形式の検索リンクで案内する（キーワードはURLエンコード不要、スペースは+にする）。個別動画の直リンクは、相手が貼ってくれたURLを参照する場合だけ使ってよい。';
     if (/gemma/i.test(get(LS.model,''))){
-      out += '\n\n【出力ルール（厳守）】返答は、キャラクターとしてのセリフと（ト書き）だけを日本語で出力すること。思考過程・計画・分析・箇条書きのメモ・英語のテキストは、どんな形でも絶対に出力しない。「Action:」「Dialogue:」のようなラベルや見出し、行頭の記号（*・-）も一切使わず、地の文とセリフだけを自然に書くこと。';
+      out += '\n\n【出力ルール（厳守）】1文字目から日本語の本文（セリフと（ト書き））だけを書き始めること。英語での思考・下書き・チェックリスト・分析・箇条書きは、どんな形でも絶対に出力しない。本文は一度だけ書く（同じ文章を二度繰り返さない）。「Action:」「Dialogue:」のようなラベルや見出し、行頭の記号（*・-）も一切使わない。';
     }
     return out;
   }
@@ -923,90 +965,164 @@
   }
 
   /* ---------- Gemini call ---------- */
+  function providerOf(model){
+    if (/^(gpt|o\d|chatgpt)/i.test(model)) return 'openai';
+    if (/^claude/i.test(model)) return 'anthropic';
+    return 'gemini';
+  }
+
+  function activeKeyMissing(){
+    const pv = providerOf(get(LS.model,'') || 'gemini-2.5-flash');
+    if (pv === 'openai') return !get(LS.oaKey,'');
+    if (pv === 'anthropic') return !get(LS.antKey,'');
+    return !get(LS.key,'');
+  }
+
   async function callGemini(extraHiddenPrompt, image, ytUrl){
-    const apiKey = get(LS.key,'');
     const model = get(LS.model,'') || 'gemini-2.5-flash';
+    const provider = providerOf(model);
+    const sys = fullSystemPrompt();
 
-    const msgs = history.slice(-40).map(m => ({
-      role: m.role,
-      parts: [{ text: m.text }]
+    // 会話履歴を共通形式に
+    const turns = history.slice(-40).map(m => ({
+      role: m.role === 'model' ? 'assistant' : 'user',
+      text: m.text
     }));
-    if (extraHiddenPrompt){
-      msgs.push({ role:'user', parts:[{ text: extraHiddenPrompt }] });
-    }
-    // 直前のユーザーメッセージに写真を添付
-    if (image){
-      for (let i = msgs.length - 1; i >= 0; i--){
-        if (msgs[i].role === 'user'){
-          msgs[i].parts.unshift({ inline_data: { mime_type: image.mime, data: image.data } });
-          break;
-        }
-      }
-    }
-    // YouTubeのURLがあれば動画として添付（Gemini系のみ対応）
-    if (ytUrl && /gemini/i.test(model)){
-      for (let i = msgs.length - 1; i >= 0; i--){
-        if (msgs[i].role === 'user'){
-          msgs[i].parts.unshift({ file_data: { file_uri: ytUrl } });
-          break;
-        }
-      }
-    }
+    if (extraHiddenPrompt) turns.push({ role:'user', text: extraHiddenPrompt });
 
-    const body = {
-      system_instruction: { parts: [{ text: fullSystemPrompt() }] },
-      contents: msgs
-    };
-    const ss = safetySettings();
-    if (ss && !/gemma/i.test(model)) body.safetySettings = ss;
-    if (flag0(LS.search) && /gemini/i.test(model)){
-      body.tools = [{ google_search: {} }];
-    }
-    // Gemmaは指示書の時刻を読み飛ばしがちなので、直近メッセージの隣にも時刻を添える（物語モードでは添えない）
-    if (/gemma/i.test(model) && !(curThread() && curThread().rp)){
-      for (let i = msgs.length - 1; i >= 0; i--){
-        if (msgs[i].role === 'user'){
-          msgs[i].parts.push({ text: '\n（いまは' + nowStr() + '）' });
-          break;
+    let url, headers, body, extract;
+
+    if (provider === 'openai'){
+      const key = get(LS.oaKey,'');
+      if (!key) throw new Error('OpenAI（ChatGPT）のAPIキーが未設定だよ。⚙︎で入れてね');
+      const msgs = [{ role:'system', content: sys }];
+      turns.forEach(t => msgs.push({ role: t.role, content: t.text }));
+      if (image){
+        for (let i = msgs.length - 1; i >= 0; i--){
+          if (msgs[i].role === 'user'){
+            msgs[i] = { role:'user', content: [
+              { type:'image_url', image_url: { url: 'data:' + image.mime + ';base64,' + image.data } },
+              { type:'text', text: (typeof msgs[i].content === 'string' ? msgs[i].content : '') }
+            ]};
+            break;
+          }
         }
       }
-    }
+      url = 'https://api.openai.com/v1/chat/completions';
+      headers = { 'Content-Type':'application/json', 'Authorization':'Bearer ' + key };
+      body = { model: model, messages: msgs };
+      extract = d => (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
 
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-      encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+    } else if (provider === 'anthropic'){
+      const key = get(LS.antKey,'');
+      if (!key) throw new Error('Anthropic（Claude）のAPIキーが未設定だよ。⚙︎で入れてね');
+      // Claudeはuser/assistantの交互が必須なので、同じ役が連続したら結合する
+      const msgs = [];
+      turns.forEach(t => {
+        if (msgs.length && msgs[msgs.length - 1].role === t.role && typeof msgs[msgs.length - 1].content === 'string'){
+          msgs[msgs.length - 1].content += '\n' + t.text;
+        } else {
+          msgs.push({ role: t.role, content: t.text });
+        }
+      });
+      if (msgs.length && msgs[0].role !== 'user') msgs.unshift({ role:'user', content:'（会話の続きから）' });
+      if (image){
+        for (let i = msgs.length - 1; i >= 0; i--){
+          if (msgs[i].role === 'user'){
+            msgs[i] = { role:'user', content: [
+              { type:'image', source: { type:'base64', media_type: image.mime, data: image.data } },
+              { type:'text', text: (typeof msgs[i].content === 'string' ? msgs[i].content : '') }
+            ]};
+            break;
+          }
+        }
+      }
+      url = 'https://api.anthropic.com/v1/messages';
+      headers = {
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      };
+      body = { model: model, max_tokens: 2048, system: sys, messages: msgs };
+      extract = d => ((d.content || []).map(b => b.text || '').join(''));
+
+    } else {
+      const apiKey = get(LS.key,'');
+      if (!apiKey) throw new Error('GeminiのAPIキーが未設定だよ。⚙︎で入れてね');
+      const msgs = history.slice(-40).map(m => ({
+        role: m.role,
+        parts: [{ text: m.text }]
+      }));
+      if (extraHiddenPrompt){
+        msgs.push({ role:'user', parts:[{ text: extraHiddenPrompt }] });
+      }
+      if (image){
+        for (let i = msgs.length - 1; i >= 0; i--){
+          if (msgs[i].role === 'user'){
+            msgs[i].parts.unshift({ inline_data: { mime_type: image.mime, data: image.data } });
+            break;
+          }
+        }
+      }
+      if (ytUrl && /gemini/i.test(model)){
+        for (let i = msgs.length - 1; i >= 0; i--){
+          if (msgs[i].role === 'user'){
+            msgs[i].parts.unshift({ file_data: { file_uri: ytUrl } });
+            break;
+          }
+        }
+      }
+      body = {
+        system_instruction: { parts: [{ text: sys }] },
+        contents: msgs
+      };
+      const ss = safetySettings();
+      if (ss && !/gemma/i.test(model)) body.safetySettings = ss;
+      if (flag0(LS.search) && /gemini/i.test(model)){
+        body.tools = [{ google_search: {} }];
+      }
+      if (/gemma/i.test(model) && !(curThread() && curThread().rp)){
+        for (let i = msgs.length - 1; i >= 0; i--){
+          if (msgs[i].role === 'user'){
+            msgs[i].parts.push({ text: '\n（いまは' + nowStr() + '）' });
+            break;
+          }
+        }
+      }
+      url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+        encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
+      headers = { 'Content-Type':'application/json' };
+      extract = d => { try { return d.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){ return ''; } };
+    }
 
     // 一時的なエラー（混雑・500系）は少し待って自動リトライ
     let res, data, lastErr = '';
     for (let attempt = 0; attempt < 3; attempt++){
       if (attempt > 0) await new Promise(r => setTimeout(r, 1200 * attempt));
       try {
-        res = await fetch(url, {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(body)
-        });
+        res = await fetch(url, { method:'POST', headers: headers, body: JSON.stringify(body) });
       } catch(netErr){
-        lastErr = netErr.message; continue; // 通信エラーもリトライ
+        lastErr = netErr.message; continue;
       }
       data = await res.json();
       if (res.ok) break;
-      const msg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
+      const msg = (data && data.error && (data.error.message || data.error.type)) || ('HTTP ' + res.status);
       lastErr = msg;
-      const transient = res.status === 500 || res.status === 503 || res.status === 429 ||
+      const transient = res.status === 500 || res.status === 503 || res.status === 429 || res.status === 529 ||
         /internal error|overloaded|unavailable|try again/i.test(msg);
-      if (!transient) throw new Error(msg); // APIキー間違いなど恒久エラーは即中断
+      if (!transient) throw new Error(msg);
     }
     if (!res || !res.ok) throw new Error(lastErr || 'Internal error');
-    let reply = '';
-    try { reply = data.candidates[0].content.parts.map(p => p.text || '').join(''); } catch(e){}
+
+    let reply = extract(data) || '';
     if (reply){
-      // URL内の全角文字を半角に直す（全角＝などでリンクが壊れるのを防ぐ）
       reply = reply.replace(/https?:\/\/[^\s]+/g, m =>
         m.replace(/[＝？＆／：．＋]/g, c =>
           ({'＝':'=','？':'?','＆':'&','／':'/','：':':','．':'.','＋':'+'}[c])));
     }
-    if (reply && /gemma/i.test(model)) reply = stripLeak(reply);
-    if (reply && /gemma/i.test(model)) reply = stripLabels(reply);
+    if (reply && provider === 'gemini' && /gemma/i.test(model)) reply = stripLeak(reply);
+    if (reply && provider === 'gemini' && /gemma/i.test(model)) reply = stripLabels(reply);
     return reply;
   }
 
@@ -1020,35 +1136,43 @@
     return t.replace(/[ \t]{2,}/g,' ').replace(/\n{3,}/g,'\n\n').trim();
   }
 
-  // Gemmaが英語の思考メモを漏らした場合、冒頭の英語ブロックを削って本文だけ残す
+  // Gemmaが英語の思考・下書きを漏らした場合、最後の日本語ブロック（＝本番の返事）だけを残す
   function stripLeak(text){
     const lines = text.split('\n');
-    const jpRe = /[ぁ-んァ-ヶ一-龯]/;
-    let i = 0;
-    while (i < lines.length){
-      const t = lines[i].trim();
-      if (!t){ i++; continue; }                     // 冒頭の空行は読み飛ばす
-      const ascii = (t.match(/[\x00-\x7F]/g) || []).length;
-      const heavy = ascii / t.length > 0.7;
-      const engStart = /^[\*\-•>]*\s*[A-Za-z"'\[]/.test(t);
-      if (!jpRe.test(t) && (heavy || engStart)){ i++; continue; }  // 日本語ゼロの英語行→捨てる
-      if (engStart && jpRe.test(t)){
-        // 英語メモと日本語本文が同じ行に融合→日本語が始まる位置から残す
-        // ただし「OKだよ」みたいな短い英語prefixの普通の返事は切らない
-        const m = t.search(jpRe);
-        const bullet = /^[\*\-•>]/.test(t);
-        if (bullet || m > 15){
-          let start = m;
-          if (m > 0 && (t[m-1] === '（' || t[m-1] === '(')) start = m - 1;
-          lines[i] = t.slice(start);
-        }
-        break;
-      }
-      if (heavy){ i++; continue; }
-      break;
+    const isJpLine = (raw) => {
+      const s = raw.trim();
+      if (!s) return null; // 空行は中立
+      const jp = (s.match(/[ぁ-んァ-ヶ一-龯]/g) || []).length;
+      const en = (s.match(/[A-Za-z]/g) || []).length;
+      if (jp === 0) return !/[A-Za-z]{2,}/.test(s); // 記号・顔文字だけならOK、英単語があればNG
+      return jp * 2 >= en; // 日本語優勢ならOK
+    };
+    let end = lines.length - 1;
+    while (end >= 0 && lines[end].trim() === '') end--;
+    if (end < 0) return text.trim();
+    let start = end;
+    for (let i = end; i >= 0; i--){
+      const c = isJpLine(lines[i]);
+      if (c === false) break;
+      if (c === true) start = i;
     }
-    const out = lines.slice(i).join('\n').trim();
-    return out || text.trim();
+    let out = lines.slice(start, end + 1).join('\n').trim();
+    if (!out) return text.trim();
+    return dedupeReply(out);
+  }
+
+  // 下書きと完成版で同じ本文が2回出てきたら、後半（完成版）だけ残す
+  function dedupeReply(t){
+    const lines = t.split('\n');
+    const firstLine = (lines.find(l => l.trim()) || '').trim();
+    if (firstLine.length < 10) return t;
+    const lastIdx = t.lastIndexOf(firstLine);
+    const firstIdx = t.indexOf(firstLine);
+    if (lastIdx > firstIdx && lastIdx > t.length * 0.25){
+      const tail = t.slice(lastIdx).trim();
+      if (tail.length >= t.length * 0.35) return tail;
+    }
+    return t;
   }
 
   function safetySettings(){
@@ -1195,7 +1319,7 @@
 
   async function maybeGreet(){
     if (!flag(LS.greet)) return;
-    if (!get(LS.key,'')) return;
+    if (activeKeyMissing()) return;
     if (curThread() && curThread().rp) return; // 物語モードでは時間ベースの第一声はしない
     const lastTs = history.length ? (history[history.length-1].ts || 0) : 0;
     const gap = Date.now() - lastTs;
@@ -1270,8 +1394,7 @@
   /* ---------- diary ---------- */
   diaryBtn.addEventListener('click', () => {
     if (busy) return;
-    const apiKey = get(LS.key,'');
-    if (!apiKey){ addBubble('error','APIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
+    if (activeKeyMissing()){ addBubble('error','このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     const p = '（システム指示：今日は' + timeContext() + '。ここまでの会話や出来事をもとに、あなた（キャラクター）の視点で今日の日記を書いて。日付から始めて、その日にあったこと・話したこと・感じたことを、キャラクターらしい文体で200〜400字程度。日記の本文だけを出力して。）';
     aiTurn(p, {diary:true});
   });
@@ -1279,8 +1402,7 @@
   /* ---------- memory add ---------- */
   memoryBtn.addEventListener('click', () => {
     if (busy) return;
-    const apiKey = get(LS.key,'');
-    if (!apiKey){ addBubble('error','APIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
+    if (activeKeyMissing()){ addBubble('error','このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     const visible = history.filter(m => !m.hidden && !m.diary);
     if (visible.length < 2){ addBubble('error','まだ思い出にできる会話がないみたい。少しお話ししてから押してね'); return; }
     const now = new Date();
@@ -1292,13 +1414,44 @@
   /* ---------- photo ---------- */
   photoBtn.addEventListener('click', async () => {
     if (busy) return;
-    const apiKey = get(LS.key,'');
-    if (!apiKey){ addBubble('error','APIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
+    const imConf = get(LS.imgModel,'') || 'gemini-2.5-flash-image';
+    const imKeyMissing = /^(gpt-image|dall-e)/i.test(imConf) ? !get(LS.oaKey,'') : !get(LS.key,'');
+    if (imKeyMissing){ addBubble('error','画像モデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     busy = true;
     sendBtn.disabled = true; photoBtn.disabled = true; diaryBtn.disabled = true; memoryBtn.disabled = true;
     const typing = showTyping();
     try {
       const imgModel = get(LS.imgModel,'') || 'gemini-2.5-flash-image';
+      if (/^(gpt-image|dall-e)/i.test(imgModel)){
+        // OpenAI画像生成
+        const oaKey = get(LS.oaKey,'');
+        if (!oaKey) throw new Error('OpenAIのAPIキーが未設定だよ（⚙︎で入れてね）');
+        const recentOA = history.filter(m=>!m.hidden).slice(-6).map(m => (m.role==='model'?'相手':'ユーザー') + ': ' + m.text).join('\n');
+        const promptOA = '次のキャラクター設定と直近の会話の流れに合う、キャラクターが恋人に今スマホで撮って送りそうな写真を1枚生成して。スマホ写真らしい自然な構図で。\n【設定】' + fullSystemPrompt() + '\n【直近の会話】\n' + recentOA;
+        const resOA = await fetch('https://api.openai.com/v1/images/generations', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer ' + oaKey},
+          body: JSON.stringify({ model: imgModel, prompt: promptOA, size: '1024x1024' })
+        });
+        const dataOA = await resOA.json();
+        typing.remove();
+        if (!resOA.ok){
+          const msg = (dataOA && dataOA.error && dataOA.error.message) || ('HTTP ' + resOA.status);
+          addBubble('error','画像エラー: ' + msg);
+        } else {
+          const b64 = dataOA.data && dataOA.data[0] && dataOA.data[0].b64_json;
+          if (b64){
+            addPhotoBubble('data:image/png;base64,' + b64);
+            history.push({role:'model', text:'（写真を1枚送った）', ts:Date.now()});
+            saveHistory();
+          } else {
+            addBubble('error','画像が返ってこなかったよ…');
+          }
+        }
+        busy = false;
+        sendBtn.disabled = false; photoBtn.disabled = false; diaryBtn.disabled = false; memoryBtn.disabled = false;
+        return;
+      }
       const recent = history.filter(m=>!m.hidden).slice(-6).map(m => (m.role==='model'?'相手':'ユーザー') + ': ' + m.text).join('\n');
       const prompt = '次のキャラクター設定と直近の会話の流れに合う、キャラクターが恋人に今スマホで撮って送りそうな写真を1枚生成して。スマホ写真らしい自然な構図で。\n【設定】' + fullSystemPrompt() + '\n【直近の会話】\n' + recent;
 
@@ -1565,7 +1718,7 @@
   }
 
   /* ---------- settings ---------- */
-  const DEFAULT_MODELS = ['gemini-2.5-flash','gemini-2.5-pro','gemma-4-31b-it','gemma-4-26b-a4b-it'];
+  const DEFAULT_MODELS = ['gemini-2.5-flash','gemini-2.5-pro','gemma-4-31b-it','gemma-4-26b-a4b-it','gpt-5.1','gpt-5.1-mini','claude-sonnet-4-6','claude-haiku-4-5'];
   const modelSel = document.getElementById('modelSel');
   const modelInput = document.getElementById('model');
 
@@ -1635,6 +1788,8 @@
 
   function openSheet(){
     document.getElementById('apiKey').value = get(LS.key,'');
+    document.getElementById('oaKey').value = get(LS.oaKey,'');
+    document.getElementById('antKey').value = get(LS.antKey,'');
     populateModelSelect();
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
     document.getElementById('safetySel').value = get(LS.safety,'default');
@@ -1649,6 +1804,7 @@
     document.getElementById('useVoice').checked = flag0(LS.voice);
     document.getElementById('useSearch').checked = flag0(LS.search);
     document.getElementById('lightTheme').checked = flag0(LS.light);
+    updateStorageMeter();
     sheet.classList.add('show'); overlay.classList.add('show');
   }
   function closeSheets(){
@@ -1662,6 +1818,8 @@
 
   document.getElementById('saveBtn').addEventListener('click', () => {
     localStorage.setItem(LS.key, document.getElementById('apiKey').value.trim());
+    localStorage.setItem(LS.oaKey, document.getElementById('oaKey').value.trim());
+    localStorage.setItem(LS.antKey, document.getElementById('antKey').value.trim());
     localStorage.setItem(LS.model, selectedModel());
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
@@ -1678,9 +1836,28 @@
     localStorage.setItem(LS.light, document.getElementById('lightTheme').checked ? '1':'0');
     applySkin();
     updateHeader();
+    updateModeBtn();
     closeSheets();
     renderAll();
   });
+
+
+  function updateStorageMeter(){
+    try {
+      let all = 0, mine = 0;
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        const v = localStorage.getItem(k) || '';
+        const sz = (k.length + v.length) * 2;
+        all += sz;
+        if (k.indexOf(KP) === 0) mine += sz;
+      }
+      const mb = n => (n / 1048576).toFixed(2);
+      let msg = '📦 データ使用量：この子 ' + mb(mine) + 'MB ／ 全パートナー合計 ' + mb(all) + 'MB（目安の上限 約5MB）';
+      if (all > 3.5 * 1048576) msg += ' ⚠️ そろそろ余裕が少ないよ。💾バックアップを取って、使ってない背景画像を外すか古い話題を整理してね';
+      document.getElementById('storageMeter').textContent = msg;
+    } catch(e){}
+  }
 
   /* ---------- backup / restore ---------- */
   document.getElementById('backupBtn').addEventListener('click', () => {
@@ -1837,11 +2014,26 @@
   });
 
   /* ---------- sending ---------- */
+  // 入力中はツールボタンをしまって入力欄を広くする（›で呼び戻せる）
+  const composerEl = document.getElementById('composer');
+  let toolsPinned = false;
+  function refreshCompact(){
+    const active = (document.activeElement === inputEl) || inputEl.value.length > 0;
+    composerEl.classList.toggle('compact', active && !toolsPinned);
+  }
+  document.getElementById('expandBtn').addEventListener('click', () => {
+    toolsPinned = true;
+    refreshCompact();
+  });
+  inputEl.addEventListener('focus', () => { refreshCompact(); });
+  inputEl.addEventListener('blur', () => { toolsPinned = false; setTimeout(refreshCompact, 150); });
+
   inputEl.addEventListener('input', () => {
     inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
     clearTimeout(nudgeTimer);
     nudgeDueAt = 0;
+    refreshCompact();
   });
 
   sendBtn.addEventListener('click', send);
@@ -1858,9 +2050,8 @@
   async function send(){
     const text = inputEl.value.trim();
     if ((!text && !pendingImage) || busy) return;
-    const apiKey = get(LS.key,'');
-    if (!apiKey){
-      addBubble('error','APIキーが未設定だよ。右上の⚙︎から入れてね');
+    if (activeKeyMissing()){
+      addBubble('error','このモデル用のAPIキーが未設定だよ。右上の⚙︎から入れてね');
       openSheet();
       return;
     }
@@ -1889,6 +2080,8 @@
     const opts = {};
     if (image) opts.image = image;
     if (ytUrl) opts.youtube = ytUrl;
+    toolsPinned = false;
+    refreshCompact();
     await aiTurn(null, opts);
     inputEl.focus();
   }
@@ -1897,8 +2090,9 @@
   initThreads();
   applySkin();
   updateHeader();
+  updateModeBtn();
   renderAll();
-  if (!get(LS.key,'')) {
+  if (activeKeyMissing()) {
     setTimeout(openSheet, 600);
   } else {
     setTimeout(maybeGreet, 800);
