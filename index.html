@@ -222,10 +222,10 @@
     border-top:1px solid rgba(183,110,121,.18);
   }
   #toolBtns{display:flex;flex:0 0 auto}
-  #photoBtn,#diaryBtn,#attachBtn,#memoryBtn,#letterBtn,#topicBtn{
+  #photoBtn,#attachBtn{
     flex:0 0 auto;
-    width:30px;height:46px;border:none;background:none;
-    color:var(--ink-dim);font-size:18px;cursor:pointer;padding:0;
+    width:36px;height:46px;border:none;background:none;
+    color:var(--ink-dim);font-size:20px;cursor:pointer;padding:0;
   }
   #expandBtn{
     display:none;flex:0 0 auto;
@@ -341,6 +341,14 @@
   .btn.ghost{background:none;border:1px solid rgba(212,117,107,.5);color:var(--danger);margin-top:12px}
 
   /* ---------- thread list ---------- */
+  .menu-row{
+    display:block;width:100%;text-align:left;
+    padding:14px 14px;margin-bottom:10px;
+    background:var(--surface);
+    border:1px solid rgba(183,110,121,.25);border-radius:14px;
+    color:var(--ink);font-family:inherit;font-size:15px;cursor:pointer;
+  }
+  .menu-row:disabled{opacity:.4}
   .thread-row{
     display:flex;align-items:center;gap:10px;
     padding:14px 12px;
@@ -368,10 +376,9 @@
     <div class="partner-sub" id="headerSub">おや、いらっしゃい</div>
   </div>
   <div class="header-spacer"></div>
-  <button class="icon-btn" id="favBtn" aria-label="アルバム">⭐</button>
   <button class="icon-btn" id="modeBtn" aria-label="世界観モード切替">📱</button>
-  <button class="icon-btn" id="openSearch" aria-label="メッセージ検索">🔎</button>
   <button class="icon-btn" id="openThreads" aria-label="話題を切り替える">💬</button>
+  <button class="icon-btn" id="openMenu" aria-label="メニュー">☰</button>
   <button class="icon-btn" id="openSettings" aria-label="設定">⚙︎</button>
 </header>
 
@@ -390,16 +397,28 @@
   <div id="toolBtns">
     <button id="attachBtn" aria-label="写真を見せる" title="写真を見せる">🖼</button>
     <button id="photoBtn" aria-label="写真をリクエスト" title="写真を送ってもらう">📷</button>
-    <button id="diaryBtn" aria-label="日記を書いてもらう" title="今日の日記を書いてもらう">📖</button>
-    <button id="memoryBtn" aria-label="今日のことを思い出に追加" title="今日のことを思い出に追加">💭</button>
-    <button id="letterBtn" aria-label="手紙を書いてもらう" title="手紙を書いてもらう">💌</button>
-    <button id="topicBtn" aria-label="話題を振ってもらう" title="話題を振ってもらう">🎲</button>
   </div>
   <textarea id="input" rows="1" placeholder="メッセージを書く…"></textarea>
   <button id="send" aria-label="送信">↑</button>
 </div>
 
 <div id="overlay"></div>
+
+<div id="menuSheet" class="sheet" role="dialog" aria-label="メニュー">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">メニュー</div>
+  <div class="field">
+    <label for="menuModelSel">🤖 いまのモデル（すぐ切替）</label>
+    <select id="menuModelSel"></select>
+    <div class="hint">切り替えは次のメッセージから反映。細かい設定・APIキーは⚙︎へ。</div>
+  </div>
+  <button id="topicBtn" class="menu-row">🎲 話題を振ってもらう</button>
+  <button id="letterBtn" class="menu-row">💌 手紙を書いてもらう</button>
+  <button id="diaryBtn" class="menu-row">📖 今日の日記を書いてもらう</button>
+  <button id="memoryBtn" class="menu-row">💭 今日のことを思い出に追加</button>
+  <button id="favBtn" class="menu-row">⭐ ふたりのアルバム・記録</button>
+  <button id="openSearch" class="menu-row">🔎 メッセージ検索</button>
+</div>
 
 <div id="favSheet" class="sheet" role="dialog" aria-label="アルバム">
   <div class="sheet-handle"></div>
@@ -449,11 +468,17 @@
   </div>
 
   <div class="field">
+    <label for="orKey">OpenRouter APIキー（まとめて使う派・任意）</label>
+    <input type="password" id="orKey" placeholder="sk-or-…" autocomplete="off">
+    <div class="hint">1つのキー＋残高でいろんな会社のモデルが使える窓口（手数料少し上乗せ）。モデル名を「会社/モデル名」形式（例: openai/gpt-5.1-mini）で入力するとこのキーで動くよ。openrouter.ai で取得。</div>
+  </div>
+
+  <div class="field">
     <label for="modelSel">会話モデル</label>
     <select id="modelSel"></select>
     <input type="text" id="model" placeholder="モデル名を手入力（例: gemini-2.5-flash）" style="margin-top:8px" hidden>
     <button type="button" class="btn line" id="fetchModelsBtn" style="margin-top:8px;padding:9px;font-size:13px">🔄 使えるモデル一覧を取得</button>
-    <div class="hint">迷ったら gemini-2.5-flash。gpt〜はOpenAIキー、claude〜はAnthropicキーで動くよ（モデル名の頭で自動判別）。🔄はGeminiの一覧を取得（Geminiキー保存後にどうぞ）。</div>
+    <div class="hint">迷ったら gemini-2.5-flash。gpt〜はOpenAIキー、claude〜はAnthropicキー、「会社/モデル名」形式はOpenRouterキーで動くよ（自動判別）。🔄はGeminiの一覧を取得。</div>
   </div>
 
   <div class="field">
@@ -562,6 +587,7 @@
     key:   KP + 'apikey',
     oaKey: KP + 'oakey',
     antKey: KP + 'antkey',
+    orKey: KP + 'orkey',
     model: KP + 'model',
     modelList: KP + 'modellist',
     safety: KP + 'safety',
@@ -984,6 +1010,7 @@
 
   /* ---------- Gemini call ---------- */
   function providerOf(model){
+    if (model.indexOf('/') !== -1) return 'openrouter';
     if (/^(gpt|o\d|chatgpt)/i.test(model)) return 'openai';
     if (/^claude/i.test(model)) return 'anthropic';
     return 'gemini';
@@ -991,6 +1018,7 @@
 
   function activeKeyMissing(){
     const pv = providerOf(get(LS.model,'') || 'gemini-2.5-flash');
+    if (pv === 'openrouter') return !get(LS.orKey,'');
     if (pv === 'openai') return !get(LS.oaKey,'');
     if (pv === 'anthropic') return !get(LS.antKey,'');
     return !get(LS.key,'');
@@ -1010,9 +1038,9 @@
 
     let url, headers, body, extract;
 
-    if (provider === 'openai'){
-      const key = get(LS.oaKey,'');
-      if (!key) throw new Error('OpenAI（ChatGPT）のAPIキーが未設定だよ。⚙︎で入れてね');
+    if (provider === 'openai' || provider === 'openrouter'){
+      const key = provider === 'openrouter' ? get(LS.orKey,'') : get(LS.oaKey,'');
+      if (!key) throw new Error((provider === 'openrouter' ? 'OpenRouter' : 'OpenAI（ChatGPT）') + 'のAPIキーが未設定だよ。⚙︎で入れてね');
       const msgs = [{ role:'system', content: sys }];
       turns.forEach(t => msgs.push({ role: t.role, content: t.text }));
       if (image){
@@ -1026,7 +1054,9 @@
           }
         }
       }
-      url = 'https://api.openai.com/v1/chat/completions';
+      url = provider === 'openrouter'
+        ? 'https://openrouter.ai/api/v1/chat/completions'
+        : 'https://api.openai.com/v1/chat/completions';
       headers = { 'Content-Type':'application/json', 'Authorization':'Bearer ' + key };
       body = { model: model, messages: msgs };
       extract = d => (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
@@ -1422,6 +1452,7 @@
   /* ---------- diary ---------- */
   diaryBtn.addEventListener('click', () => {
     if (busy) return;
+    closeSheets();
     if (activeKeyMissing()){ addBubble('error','このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     const p = '（システム指示：今日は' + timeContext() + '。ここまでの会話や出来事をもとに、あなた（キャラクター）の視点で今日の日記を書いて。日付から始めて、その日にあったこと・話したこと・感じたことを、キャラクターらしい文体で200〜400字程度。日記の本文だけを出力して。）';
     aiTurn(p, {diary:true});
@@ -1430,6 +1461,7 @@
   /* ---------- memory add ---------- */
   memoryBtn.addEventListener('click', () => {
     if (busy) return;
+    closeSheets();
     if (activeKeyMissing()){ addBubble('error','このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     const visible = history.filter(m => !m.hidden && !m.diary);
     if (visible.length < 2){ addBubble('error','まだ思い出にできる会話がないみたい。少しお話ししてから押してね'); return; }
@@ -1442,6 +1474,7 @@
   /* ---------- letter ---------- */
   letterBtn.addEventListener('click', () => {
     if (busy) return;
+    closeSheets();
     if (activeKeyMissing()){ addBubble('error','このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     const p = '（システム指示：今日は' + timeContext() + '。あなたから相手への手紙を書いて。これまでの思い出や最近の会話を踏まえて、普段の会話では言い切れない気持ちも込めた、あたたかい手紙にすること。400〜700字程度で、手紙の本文だけを出力して。）';
     aiTurn(p, {diary:true, label:'💌 手紙'});
@@ -1450,6 +1483,7 @@
   /* ---------- topic gacha ---------- */
   topicBtn.addEventListener('click', () => {
     if (busy) return;
+    closeSheets();
     if (activeKeyMissing()){ addBubble('error','このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
     const p = '（システム指示：あなたの方から、新しい話題をひとつ振って。最近の会話・ふたりの思い出・季節や時間帯などを踏まえて、相手が乗りやすくて少しわくわくする質問や提案を、短めに自然に切り出すこと。）';
     aiTurn(p);
@@ -1679,8 +1713,7 @@
   let searchTimer = null;
 
   document.getElementById('openSearch').addEventListener('click', () => {
-    sheet.classList.remove('show');
-    threadSheet.classList.remove('show');
+    closeSheets();
     searchSheet.classList.add('show');
     overlay.classList.add('show');
     setTimeout(() => searchInput.focus(), 250);
@@ -1834,6 +1867,7 @@
     document.getElementById('apiKey').value = get(LS.key,'');
     document.getElementById('oaKey').value = get(LS.oaKey,'');
     document.getElementById('antKey').value = get(LS.antKey,'');
+    document.getElementById('orKey').value = get(LS.orKey,'');
     populateModelSelect();
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
     document.getElementById('safetySel').value = get(LS.safety,'default');
@@ -1856,6 +1890,7 @@
     threadSheet.classList.remove('show');
     searchSheet.classList.remove('show');
     favSheet.classList.remove('show');
+    menuSheet.classList.remove('show');
     overlay.classList.remove('show');
   }
   document.getElementById('openSettings').addEventListener('click', openSheet);
@@ -1865,6 +1900,7 @@
     localStorage.setItem(LS.key, document.getElementById('apiKey').value.trim());
     localStorage.setItem(LS.oaKey, document.getElementById('oaKey').value.trim());
     localStorage.setItem(LS.antKey, document.getElementById('antKey').value.trim());
+    localStorage.setItem(LS.orKey, document.getElementById('orKey').value.trim());
     localStorage.setItem(LS.model, selectedModel());
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
@@ -2076,6 +2112,30 @@
 
   /* ---------- fav sheet (album) ---------- */
   const favSheet = document.getElementById('favSheet');
+  const menuSheet = document.getElementById('menuSheet');
+
+  function populateMenuModel(){
+    const sel = document.getElementById('menuModelSel');
+    const cur = get(LS.model,'gemini-2.5-flash');
+    const list = modelList();
+    if (cur && list.indexOf(cur) === -1) list.unshift(cur);
+    sel.innerHTML = '';
+    list.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      sel.appendChild(o);
+    });
+    sel.value = cur;
+  }
+  document.getElementById('menuModelSel').addEventListener('change', (e) => {
+    localStorage.setItem(LS.model, e.target.value);
+  });
+  document.getElementById('openMenu').addEventListener('click', () => {
+    closeSheets();
+    populateMenuModel();
+    menuSheet.classList.add('show');
+    overlay.classList.add('show');
+  });
 
   function buildStats(){
     let firstTs = 0, total = 0;
@@ -2144,9 +2204,7 @@
   }
 
   document.getElementById('favBtn').addEventListener('click', () => {
-    sheet.classList.remove('show');
-    threadSheet.classList.remove('show');
-    searchSheet.classList.remove('show');
+    closeSheets();
     renderFavs();
     favSheet.classList.add('show');
     overlay.classList.add('show');
