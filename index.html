@@ -84,7 +84,7 @@
     max-width:82%;
     padding:11px 15px;
     border-radius:var(--radius);
-    font-size:15px;line-height:1.75;
+    font-size:var(--msgfs,15px);line-height:1.75;
     white-space:pre-wrap;word-break:break-word;
     animation:pop .18s ease-out;
   }
@@ -299,7 +299,7 @@
   .sheet-title{font-size:16px;font-weight:700;color:var(--ao);margin-bottom:14px}
   .field{margin-bottom:16px}
   .field label{display:block;font-size:12px;color:var(--ink-dim);margin-bottom:6px}
-  .field input:not([type=checkbox]),.field textarea,.field select{
+  .field input:not([type=checkbox]):not([type=range]),.field textarea,.field select{
     width:100%;
     background:var(--surface);
     border:1px solid rgba(183,110,121,.3);
@@ -309,6 +309,27 @@
     -webkit-appearance:none;appearance:none;
   }
   .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--ao)}
+  .field input[type=range]{
+    width:100%;padding:0;border:none;background:transparent;
+    -webkit-appearance:auto;appearance:auto;accent-color:var(--ao);
+  }
+  .stabs{display:flex;gap:6px;margin-bottom:16px}
+  .stab{
+    flex:1 1 auto;padding:9px 4px;border-radius:12px;
+    border:1px solid rgba(183,110,121,.3);background:none;
+    color:var(--ink-dim);font-family:inherit;font-size:11.5px;
+    cursor:pointer;white-space:nowrap;
+  }
+  .stab.active{
+    background:linear-gradient(135deg,var(--ao) 0%,var(--ao-deep) 100%);
+    color:#fff;border-color:transparent;font-weight:700;
+  }
+  .user-row{
+    display:flex;flex-direction:row-reverse;align-items:flex-start;gap:8px;
+    align-self:flex-end;max-width:88%;
+    animation:pop .18s ease-out;
+  }
+  .user-row .msg{max-width:100%;animation:none}
   .field input[type=checkbox]{
     -webkit-appearance:none;appearance:none;
     width:24px;height:24px;flex:0 0 auto;margin:0;
@@ -449,31 +470,39 @@
   <div class="sheet-handle"></div>
   <div class="sheet-title">設定</div>
 
-  <div class="field">
+  <div class="stabs">
+    <button type="button" class="stab active" data-tab="conn">🔑接続</button>
+    <button type="button" class="stab" data-tab="you">👤キャラと私</button>
+    <button type="button" class="stab" data-tab="look">🎨きせかえ</button>
+    <button type="button" class="stab" data-tab="act">🔔ふるまい</button>
+    <button type="button" class="stab" data-tab="data">💾データ</button>
+  </div>
+
+  <div class="field" data-pane="conn">
     <label for="apiKey">Gemini APIキー</label>
     <input type="password" id="apiKey" placeholder="AIza…" autocomplete="off">
     <div class="hint">Google AI Studio（aistudio.google.com）で無料取得。キーはこの端末のブラウザ内にだけ保存されます。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
     <label for="oaKey">OpenAI APIキー（ChatGPT・任意）</label>
     <input type="password" id="oaKey" placeholder="sk-…" autocomplete="off">
     <div class="hint">gpt系モデルや画像生成（gpt-image-1）を使う時だけ必要。platform.openai.com で取得（従量課金）。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
     <label for="antKey">Anthropic APIキー（Claude・任意）</label>
     <input type="password" id="antKey" placeholder="sk-ant-…" autocomplete="off">
     <div class="hint">claude系モデルを使う時だけ必要。console.anthropic.com で取得（従量課金）。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
     <label for="orKey">OpenRouter APIキー（まとめて使う派・任意）</label>
     <input type="password" id="orKey" placeholder="sk-or-…" autocomplete="off">
     <div class="hint">1つのキー＋残高でいろんな会社のモデルが使える窓口（手数料少し上乗せ）。モデル名を「会社/モデル名」形式（例: openai/gpt-5.1-mini）で入力するとこのキーで動くよ。openrouter.ai で取得。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
     <label for="modelSel">会話モデル</label>
     <select id="modelSel"></select>
     <input type="text" id="model" placeholder="モデル名を手入力（例: gemini-2.5-flash）" style="margin-top:8px" hidden>
@@ -481,13 +510,13 @@
     <div class="hint">迷ったら gemini-2.5-flash。gpt〜はOpenAIキー、claude〜はAnthropicキー、「会社/モデル名」形式はOpenRouterキーで動くよ（自動判別）。🔄はGeminiの一覧を取得。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
     <label for="imgModel">画像モデル名</label>
     <input type="text" id="imgModel" placeholder="gemini-2.5-flash-image">
     <div class="hint">📷ボタンで使うモデル。gemini-2.5-flash-image（Geminiキー・要支払い設定）か gpt-image-1（OpenAIキー）が使えるよ。生成画像はページを閉じると消えます。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="act">
     <label for="worldSel">ふたりの世界観</label>
     <select id="worldSel">
       <option value="app">メッセージでやりとりしてる</option>
@@ -496,7 +525,7 @@
     <div class="hint">「一緒にいる」にすると、画面・スマホ・アプリの存在に触れず、同じ空間で直接会話してる前提になるよ🏠</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
     <label for="safetySel">セーフティフィルタ</label>
     <select id="safetySel">
       <option value="default">標準（Googleおまかせ）</option>
@@ -506,29 +535,53 @@
     <div class="hint">Gemini APIの公式設定（safetySettings）だよ。ただし「最小」にしてもモデル自体が応じない内容やGoogleの利用規約は変わらないから、そこは了解の上で使ってね。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="conn">
+    <label>接続テスト</label>
+    <button type="button" class="btn line" id="apiTestBtn" style="margin-top:0">🔌 いまのモデルで接続テスト</button>
+    <div class="hint" id="apiTestResult" style="margin-top:8px"></div>
+  </div>
+
+  <div class="field" data-pane="you">
     <label for="charName">パートナーの名前</label>
     <input type="text" id="charName" placeholder="紫堂">
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="you">
     <label for="sysPrompt">キャラクター設定（システムプロンプト）</label>
     <textarea id="sysPrompt" placeholder="ここにキャラ設定を貼り付けてね"></textarea>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="you">
     <label for="memory">思い出ノート（ふたりの記憶）</label>
     <textarea id="memory" placeholder="これまでの思い出・大切な出来事・約束などを貼り付けてね。ここに書いたことは、毎回の会話で相手が覚えている状態になるよ"></textarea>
     <div class="hint">日付や箇条書きだと読み取りやすいよ📝 新しい思い出ができたら追記していってね。どの話題（スレッド）でも共通で覚えてるよ。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="you">
     <label for="annivList">記念日リスト</label>
     <textarea id="annivList" style="min-height:80px" placeholder="4/3 誕生日&#10;12/24 初デート記念日"></textarea>
     <div class="hint">「月/日 なまえ」を1行ずつ書いてね。当日はお祝いしてくれて、1週間前から「もうすぐだね」って楽しみにしてくれるよ🎂</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="you">
+    <label for="uName">私の名前（呼んでほしい名前）</label>
+    <input type="text" id="uName" placeholder="例：ゆかり">
+  </div>
+
+  <div class="field" data-pane="you">
+    <label for="uIntro">私について（相手に知っておいてほしいこと）</label>
+    <textarea id="uIntro" style="min-height:90px" placeholder="誕生日、仕事、好きなもの、性格など"></textarea>
+    <div class="hint">ここに書いたことは、どのモデルに切り替えても毎回の会話で相手が知ってる前提になるよ。各キャラのプロンプト内の自己紹介をここにお引っ越しするとスッキリ！</div>
+  </div>
+
+  <div class="field" data-pane="you">
+    <label>私のアイコン（自分の吹き出し用）</label>
+    <button type="button" class="btn line" id="uAvatarBtn" style="margin-top:0">🙋 自分のアイコン画像を設定</button>
+    <button type="button" class="btn line" id="uAvatarClear">アイコンを外す</button>
+    <input type="file" id="uAvatarInput" accept="image/*" hidden>
+  </div>
+
+  <div class="field" data-pane="look">
     <label>きせかえ🎨</label>
     <button type="button" class="btn line" id="bgBtn" style="margin-top:0">🖼 チャット背景を設定</button>
     <button type="button" class="btn line" id="avatarBtn">🐦 相手のアイコン画像を設定</button>
@@ -542,7 +595,13 @@
     <div class="hint">背景を設定すると明るさを自動判定してテーマも切り替えるよ。アイコンは吹き出しの横に丸く表示される（LINE風）。画像はこの端末の中にだけ保存されます。</div>
   </div>
 
-  <div class="field">
+  <div class="field" data-pane="look">
+    <label for="fontSlider">🔤 文字の大きさ：<span id="fontVal">15</span>px</label>
+    <input type="range" id="fontSlider" min="13" max="19" step="1" value="15">
+    <div class="hint">チャットの文字サイズ。動かすとすぐ反映されるよ。</div>
+  </div>
+
+  <div class="field" data-pane="act">
     <div class="row">
       <input type="checkbox" id="autoGreet" checked>
       <label for="autoGreet" style="margin:0">アプリを開いた時、向こうから話しかけてくる</label>
@@ -567,13 +626,13 @@
   </div>
 
   <button class="btn primary" id="saveBtn">保存する</button>
-  <button class="btn line" id="backupBtn">💾 バックアップを保存（設定＋思い出＋会話）</button>
-  <button class="btn line" id="restoreBtn">📂 バックアップから復元</button>
-  <button class="btn line" id="exportBtn">📜 この話題を読み物として保存</button>
+  <button class="btn line" data-pane="data" id="backupBtn">💾 バックアップを保存（設定＋思い出＋会話）</button>
+  <button class="btn line" data-pane="data" id="restoreBtn">📂 バックアップから復元</button>
+  <button class="btn line" data-pane="data" id="exportBtn">📜 この話題を読み物として保存</button>
   <input type="file" id="restoreInput" accept="application/json,.json" hidden>
-  <div class="hint">バックアップにはAPIキーも含まれるから、ファイルは人に送らず大切に保管してね🔐</div>
-  <div class="hint" id="storageMeter" style="margin-top:8px"></div>
-  <button class="btn ghost" id="clearBtn">この話題の履歴を消す</button>
+  <div class="hint" data-pane="data">バックアップにはAPIキーも含まれるから、ファイルは人に送らず大切に保管してね🔐</div>
+  <div class="hint" data-pane="data" id="storageMeter" style="margin-top:8px"></div>
+  <button class="btn ghost" data-pane="data" id="clearBtn">この話題の履歴を消す</button>
 </div>
 
 <script>
@@ -607,7 +666,11 @@
     bg:    KP + 'bg',
     avatar: KP + 'avatar',
     light: KP + 'light',
-    favs:  KP + 'favs'
+    favs:  KP + 'favs',
+    uname: KP + 'uname',
+    uintro: KP + 'uintro',
+    uavatar: KP + 'uavatar',
+    fsize: KP + 'fsize'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -810,6 +873,11 @@
     const sys = get(LS.sys,'') || DEFAULT_SYS;
     const mem = get(LS.mem,'').trim();
     let out = sys;
+    const un = get(LS.uname,'').trim();
+    const ui = get(LS.uintro,'').trim();
+    if (un || ui){
+      out += '\n\n【相手（ユーザー）について】' + (un ? '名前：' + un + '。' : '') + (ui ? '\n' + ui : '');
+    }
     if (mem) out += '\n\n【これまでのふたりの思い出・大切な記憶（会話の前提として自然に覚えていること）】\n' + mem;
     const t = curThread();
     if (t && t.name !== '日常') out += '\n\n【いまの話題】この会話スレッドのテーマは「' + t.name + '」。';
@@ -910,6 +978,19 @@
         const img = document.createElement('img');
         img.className = 'avatar';
         img.src = av;
+        img.alt = '';
+        row.appendChild(img);
+        row.appendChild(d);
+        node = row;
+      }
+    } else if (cls === 'user'){
+      const uav = get(LS.uavatar,'');
+      if (uav){
+        const row = document.createElement('div');
+        row.className = 'user-row';
+        const img = document.createElement('img');
+        img.className = 'avatar';
+        img.src = uav;
         img.alt = '';
         row.appendChild(img);
         row.appendChild(d);
@@ -1645,6 +1726,12 @@
         const lum = avgLuminance(canvas);
         localStorage.setItem(LS.light, lum > 140 ? '1' : '0');
         document.getElementById('lightTheme').checked = flag0(LS.light);
+    document.getElementById('uName').value = get(LS.uname,'');
+    document.getElementById('uIntro').value = get(LS.uintro,'');
+    fontSlider.value = get(LS.fsize,'15');
+    document.getElementById('fontVal').textContent = get(LS.fsize,'15');
+    document.getElementById('apiTestResult').textContent = '';
+    showTab('conn');
         applySkin();
       } catch(e){
         alert('画像が大きすぎて保存できなかった…もう少し小さい画像で試してみて');
@@ -1915,6 +2002,8 @@
     localStorage.setItem(LS.voice, document.getElementById('useVoice').checked ? '1':'0');
     localStorage.setItem(LS.search, document.getElementById('useSearch').checked ? '1':'0');
     localStorage.setItem(LS.light, document.getElementById('lightTheme').checked ? '1':'0');
+    localStorage.setItem(LS.uname, document.getElementById('uName').value.trim());
+    localStorage.setItem(LS.uintro, document.getElementById('uIntro').value.trim());
     applySkin();
     updateHeader();
     updateModeBtn();
@@ -2114,6 +2203,87 @@
   const favSheet = document.getElementById('favSheet');
   const menuSheet = document.getElementById('menuSheet');
 
+  /* ---------- settings tabs ---------- */
+  function showTab(tab){
+    document.querySelectorAll('#sheet .stab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('#sheet [data-pane]').forEach(el => {
+      el.style.display = (el.dataset.pane === tab) ? '' : 'none';
+    });
+  }
+  document.querySelectorAll('#sheet .stab').forEach(b =>
+    b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+  /* ---------- font size ---------- */
+  function applyFont(){
+    document.documentElement.style.setProperty('--msgfs', get(LS.fsize,'15') + 'px');
+  }
+  const fontSlider = document.getElementById('fontSlider');
+  fontSlider.addEventListener('input', () => {
+    localStorage.setItem(LS.fsize, fontSlider.value);
+    document.getElementById('fontVal').textContent = fontSlider.value;
+    applyFont();
+  });
+
+  /* ---------- my avatar ---------- */
+  const uAvatarInput = document.getElementById('uAvatarInput');
+  document.getElementById('uAvatarBtn').addEventListener('click', () => uAvatarInput.click());
+  uAvatarInput.addEventListener('change', () => {
+    const f = uAvatarInput.files && uAvatarInput.files[0];
+    if (!f) return;
+    fileToDataUrl(f, 128, true, (url) => {
+      try { localStorage.setItem(LS.uavatar, url); renderAll(); } catch(e){ alert('画像を保存できなかった…'); }
+      uAvatarInput.value = '';
+    });
+  });
+  document.getElementById('uAvatarClear').addEventListener('click', () => {
+    localStorage.removeItem(LS.uavatar);
+    renderAll();
+  });
+
+  /* ---------- API test ---------- */
+  document.getElementById('apiTestBtn').addEventListener('click', async () => {
+    const model = selectedModel();
+    const pv = providerOf(model);
+    const val = id => document.getElementById(id).value.trim();
+    const keys = {
+      gemini: val('apiKey') || get(LS.key,''),
+      openai: val('oaKey') || get(LS.oaKey,''),
+      anthropic: val('antKey') || get(LS.antKey,''),
+      openrouter: val('orKey') || get(LS.orKey,'')
+    };
+    const key = keys[pv];
+    const out = document.getElementById('apiTestResult');
+    if (!key){ out.textContent = '✗ このモデル（' + pv + '）用のキーが入ってないよ'; return; }
+    out.textContent = '⏳ ' + model + ' に接続中…';
+    try {
+      let res, data, reply = '';
+      if (pv === 'gemini'){
+        res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key),
+          {method:'POST',headers:{'Content-Type':'application/json'},
+           body: JSON.stringify({contents:[{role:'user',parts:[{text:'テスト。「OK」とだけ返して'}]}]})});
+        data = await res.json();
+        if (res.ok){ try { reply = data.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){} }
+      } else if (pv === 'anthropic'){
+        res = await fetch('https://api.anthropic.com/v1/messages',
+          {method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+           body: JSON.stringify({model: model, max_tokens: 20, messages:[{role:'user',content:'テスト。「OK」とだけ返して'}]})});
+        data = await res.json();
+        if (res.ok) reply = (data.content || []).map(b => b.text || '').join('');
+      } else {
+        const url = pv === 'openrouter' ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+        res = await fetch(url,
+          {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer ' + key},
+           body: JSON.stringify({model: model, messages:[{role:'user',content:'テスト。「OK」とだけ返して'}]})});
+        data = await res.json();
+        if (res.ok) reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+      }
+      if (res.ok) out.textContent = '✓ 接続成功！ ' + model + ' →「' + (reply || '応答あり').trim().slice(0, 30) + '」';
+      else out.textContent = '✗ 失敗: ' + ((data && data.error && (data.error.message || data.error.type)) || ('HTTP ' + res.status));
+    } catch(e){
+      out.textContent = '✗ 通信エラー: ' + e.message;
+    }
+  });
+
   function populateMenuModel(){
     const sel = document.getElementById('menuModelSel');
     const cur = get(LS.model,'gemini-2.5-flash');
@@ -2286,6 +2456,7 @@
   /* ---------- init ---------- */
   initThreads();
   applySkin();
+  applyFont();
   updateHeader();
   updateModeBtn();
   renderAll();
