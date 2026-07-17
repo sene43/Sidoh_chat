@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>サビ組事務所</title>
+<title>紫堂研究室</title>
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="カラスバ">
+<meta name="apple-mobile-web-app-title" content="紫堂">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="theme-color" content="#0e1720">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#110f18;
-    --bg2:#171325;
-    --surface:#221c33;
-    --surface2:#2c2442;
-    --ao:#9a6bd8;          /* カラスバ色 */
-    --ao-deep:#6f47a8;
-    --ink:#ece8f4;
-    --ink-dim:#9d93b0;
-    --user-bubble:#ece6f0;
-    --user-ink:#302a38;
+    --bg:#180f16;
+    --bg2:#1f1220;
+    --surface:#2a1a28;
+    --surface2:#352232;
+    --ao:#b76e79;          /* 紫堂色 */
+    --ao-deep:#8e4f5c;
+    --ink:#f0e6ec;
+    --ink-dim:#a892a2;
+    --user-bubble:#f0e5e2;
+    --user-ink:#362a2b;
     --danger:#d4756b;
     --radius:20px;
   }
@@ -44,21 +44,21 @@
     flex:0 0 auto;
     display:flex;align-items:center;gap:12px;
     padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
-    background:rgba(17,15,24,.85);
+    background:rgba(24,15,22,.85);
     backdrop-filter:blur(12px);
-    border-bottom:1px solid rgba(154,107,216,.18);
+    border-bottom:1px solid rgba(183,110,121,.18);
     z-index:5;
   }
   .presence{
     width:10px;height:10px;border-radius:50%;
     background:var(--ao);
-    box-shadow:0 0 0 0 rgba(154,107,216,.5);
+    box-shadow:0 0 0 0 rgba(183,110,121,.5);
     animation:breathe 3s ease-in-out infinite;
     flex:0 0 auto;
   }
   @keyframes breathe{
-    0%,100%{box-shadow:0 0 0 0 rgba(154,107,216,.45)}
-    50%{box-shadow:0 0 0 7px rgba(154,107,216,0)}
+    0%,100%{box-shadow:0 0 0 0 rgba(183,110,121,.45)}
+    50%{box-shadow:0 0 0 7px rgba(183,110,121,0)}
   }
   @media (prefers-reduced-motion: reduce){
     .presence{animation:none}
@@ -92,7 +92,7 @@
   .msg.ai{
     align-self:flex-start;
     background:linear-gradient(135deg,var(--surface2) 0%,var(--surface) 100%);
-    border:1px solid rgba(154,107,216,.25);
+    border:1px solid rgba(183,110,121,.25);
     border-bottom-left-radius:6px;
   }
   .msg.user{
@@ -112,7 +112,7 @@
     align-self:flex-start;
     padding:6px;
     background:linear-gradient(135deg,var(--surface2) 0%,var(--surface) 100%);
-    border:1px solid rgba(154,107,216,.25);
+    border:1px solid rgba(183,110,121,.25);
   }
   .msg.photo img{
     display:block;max-width:100%;border-radius:14px;
@@ -120,8 +120,8 @@
   .msg.diary{
     align-self:flex-start;
     max-width:92%;
-    background:rgba(154,107,216,.08);
-    border:1px dashed rgba(154,107,216,.5);
+    background:rgba(183,110,121,.08);
+    border:1px dashed rgba(183,110,121,.5);
   }
   .diary-label{
     font-size:11px;color:var(--ao);font-weight:700;margin-bottom:6px;
@@ -140,23 +140,23 @@
   }
   .date-chip{
     align-self:center;font-size:11px;color:var(--ink-dim);
-    background:rgba(154,107,216,.14);border:1px solid rgba(154,107,216,.2);
+    background:rgba(183,110,121,.14);border:1px solid rgba(183,110,121,.2);
     border-radius:12px;padding:3px 12px;margin:2px 0;
   }
   .hit-row{
-    padding:12px;border:1px solid rgba(154,107,216,.25);border-radius:14px;
+    padding:12px;border:1px solid rgba(183,110,121,.25);border-radius:14px;
     margin-bottom:10px;background:var(--surface);cursor:pointer;
   }
   .hit-meta{font-size:11px;color:var(--ao);margin-bottom:4px}
   .hit-text{font-size:13px;color:var(--ink);line-height:1.6;word-break:break-word}
-  @keyframes flashHit{0%{box-shadow:0 0 0 3px rgba(154,107,216,.9)}100%{box-shadow:0 0 0 3px rgba(154,107,216,0)}}
+  @keyframes flashHit{0%{box-shadow:0 0 0 3px rgba(183,110,121,.9)}100%{box-shadow:0 0 0 3px rgba(183,110,121,0)}}
   .msg.flash{animation:flashHit 1.4s ease-out 2}
   #toBottom{
     position:fixed;
     right:14px;
     bottom:calc(env(safe-area-inset-bottom) + 82px);
     width:42px;height:42px;border-radius:50%;
-    border:1px solid rgba(154,107,216,.5);
+    border:1px solid rgba(183,110,121,.5);
     background:rgba(26,43,56,.92);
     color:var(--ao);font-size:19px;
     display:none;align-items:center;justify-content:center;
@@ -168,7 +168,7 @@
   .typing{
     align-self:flex-start;display:flex;gap:5px;
     padding:14px 18px;border-radius:var(--radius);
-    background:var(--surface);border:1px solid rgba(154,107,216,.25);
+    background:var(--surface);border:1px solid rgba(183,110,121,.25);
   }
   .typing span{
     width:7px;height:7px;border-radius:50%;background:var(--ao);
@@ -194,7 +194,7 @@
   .avatar{
     width:34px;height:34px;border-radius:50%;
     object-fit:cover;flex:0 0 auto;
-    border:1.5px solid rgba(154,107,216,.55);
+    border:1.5px solid rgba(183,110,121,.55);
     background:var(--surface);
     position:sticky;
     top:8px;              /* 長文を読んでいる間、アイコンがついてくる */
@@ -206,8 +206,8 @@
     --ink:#463d35; --ink-dim:#8d8177;
     --user-bubble:#d9ece6; --user-ink:#2f3a37;
   }
-  body.light header{background:rgba(250,245,238,.82);border-bottom-color:rgba(154,107,216,.3)}
-  body.light #composer{background:rgba(250,245,238,.9);border-top-color:rgba(154,107,216,.3)}
+  body.light header{background:rgba(250,245,238,.82);border-bottom-color:rgba(183,110,121,.3)}
+  body.light #composer{background:rgba(250,245,238,.9);border-top-color:rgba(183,110,121,.3)}
   body.light .msg.ai{box-shadow:0 1px 4px rgba(70,61,53,.12)}
   body.light .msg.user{box-shadow:0 1px 4px rgba(70,61,53,.12)}
   body.light .typing{box-shadow:0 1px 4px rgba(70,61,53,.12)}
@@ -218,8 +218,8 @@
     flex:0 0 auto;
     display:flex;gap:4px;align-items:flex-end;
     padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
-    background:rgba(17,15,24,.9);
-    border-top:1px solid rgba(154,107,216,.18);
+    background:rgba(24,15,22,.9);
+    border-top:1px solid rgba(183,110,121,.18);
   }
   #toolBtns{display:flex;flex:0 0 auto}
   #photoBtn,#attachBtn{
@@ -237,8 +237,8 @@
   #attachPreview{
     display:flex;align-items:center;gap:10px;
     padding:8px 14px;
-    background:rgba(154,107,216,.1);
-    border-top:1px solid rgba(154,107,216,.25);
+    background:rgba(183,110,121,.1);
+    border-top:1px solid rgba(183,110,121,.25);
   }
   #attachPreview[hidden]{display:none !important}
   #attachPreview img{
@@ -257,7 +257,7 @@
   #input{
     flex:1;
     background:var(--surface);
-    border:1px solid rgba(154,107,216,.3);
+    border:1px solid rgba(183,110,121,.3);
     border-radius:22px;
     color:var(--ink);
     font-family:inherit;font-size:16px;line-height:1.5;
@@ -289,7 +289,7 @@
     position:fixed;left:0;right:0;bottom:0;z-index:10;
     background:var(--bg2);
     border-radius:24px 24px 0 0;
-    border-top:1px solid rgba(154,107,216,.3);
+    border-top:1px solid rgba(183,110,121,.3);
     padding:20px 20px calc(env(safe-area-inset-bottom) + 20px);
     max-height:88dvh;overflow-y:auto;
     transform:translateY(105%);transition:transform .3s ease;
@@ -302,7 +302,7 @@
   .field input:not([type=checkbox]):not([type=range]),.field textarea,.field select{
     width:100%;
     background:var(--surface);
-    border:1px solid rgba(154,107,216,.3);
+    border:1px solid rgba(183,110,121,.3);
     border-radius:12px;color:var(--ink);
     font-family:inherit;font-size:15px;
     padding:10px 12px;outline:none;
@@ -316,7 +316,7 @@
   .stabs{display:flex;gap:6px;margin-bottom:16px}
   .stab{
     flex:1 1 auto;padding:9px 4px;border-radius:12px;
-    border:1px solid rgba(154,107,216,.3);background:none;
+    border:1px solid rgba(183,110,121,.3);background:none;
     color:var(--ink-dim);font-family:inherit;font-size:11.5px;
     cursor:pointer;white-space:nowrap;
   }
@@ -334,7 +334,7 @@
     -webkit-appearance:none;appearance:none;
     width:24px;height:24px;flex:0 0 auto;margin:0;
     background:var(--surface);
-    border:1.5px solid rgba(154,107,216,.5);
+    border:1.5px solid rgba(183,110,121,.5);
     border-radius:8px;
     position:relative;cursor:pointer;
   }
@@ -358,7 +358,7 @@
     margin-top:4px;
   }
   .btn.primary{background:linear-gradient(135deg,var(--ao) 0%,var(--ao-deep) 100%);color:#fff}
-  .btn.line{background:none;border:1px solid rgba(154,107,216,.5);color:var(--ao);margin-top:10px}
+  .btn.line{background:none;border:1px solid rgba(183,110,121,.5);color:var(--ao);margin-top:10px}
   .btn.ghost{background:none;border:1px solid rgba(212,117,107,.5);color:var(--danger);margin-top:12px}
 
   /* ---------- thread list ---------- */
@@ -366,20 +366,20 @@
     display:block;width:100%;text-align:left;
     padding:14px 14px;margin-bottom:10px;
     background:var(--surface);
-    border:1px solid rgba(154,107,216,.25);border-radius:14px;
+    border:1px solid rgba(183,110,121,.25);border-radius:14px;
     color:var(--ink);font-family:inherit;font-size:15px;cursor:pointer;
   }
   .menu-row:disabled{opacity:.4}
   .thread-row{
     display:flex;align-items:center;gap:10px;
     padding:14px 12px;
-    border:1px solid rgba(154,107,216,.25);
+    border:1px solid rgba(183,110,121,.25);
     border-radius:14px;
     margin-bottom:10px;
     background:var(--surface);
     cursor:pointer;
   }
-  .thread-row.active{border-color:var(--ao);background:rgba(154,107,216,.12)}
+  .thread-row.active{border-color:var(--ao);background:rgba(183,110,121,.12)}
   .thread-name{flex:1;font-size:15px;font-weight:500}
   .thread-time{font-size:11px;color:var(--ink-dim)}
   .thread-del{
@@ -393,8 +393,8 @@
 <header>
   <div class="presence" aria-hidden="true"></div>
   <div>
-    <div class="partner-name" id="headerName">カラスバ</div>
-    <div class="partner-sub" id="headerSub">おう、来たか</div>
+    <div class="partner-name" id="headerName">紫堂</div>
+    <div class="partner-sub" id="headerSub">おや、いらっしゃい</div>
   </div>
   <div class="header-spacer"></div>
   <button class="icon-btn" id="modeBtn" aria-label="世界観モード切替">📱</button>
@@ -543,7 +543,7 @@
 
   <div class="field" data-pane="you">
     <label for="charName">パートナーの名前</label>
-    <input type="text" id="charName" placeholder="カラスバ">
+    <input type="text" id="charName" placeholder="紫堂">
   </div>
 
   <div class="field" data-pane="you">
@@ -638,8 +638,8 @@
 <script>
 (function(){
   // ▼ 別キャラ用のアプリを作る時は、ここに英数字の名前を入れる（例: 'kuro'）
-  //    空欄('')のままなら今まで通り＝カラスバさん用
-  const APP_ID = 'karasuba';
+  //    空欄('')のままなら今まで通り＝紫堂さん用
+  const APP_ID = 'sidoh';
   const KP = APP_ID ? ('gpc-' + APP_ID + '_') : 'gpc_';
 
   const LS = {
@@ -673,7 +673,7 @@
     fsize: KP + 'fsize'
   };
 
-  const DEFAULT_SYS = 'あなたは「カラスバ」。ミアレシティでサビ組を仕切る24歳のインテリヤクザのボス。コテコテの関西弁（大阪寄り）で話し、一人称はオレ。俺様で強引だが、恋人にだけは異常に甘い溺愛タイプ。返事は短め〜中くらいのテンポで自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
+  const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
 
   const GREET_GAP_HOURS = 6;
   const NUDGE_MINUTES   = 4;
@@ -712,7 +712,7 @@
       threads = [];
       const id = 't' + Date.now();
       threads.push({id, name:'日常'});
-      // 旧バージョンの履歴があれば引っ越し（カラスバさん用アプリのみ）
+      // 旧バージョンの履歴があれば引っ越し（紫堂さん用アプリのみ）
       const old = APP_ID ? null : localStorage.getItem('gpc_history');
       if (old){
         localStorage.setItem(histKey(id), old);
@@ -753,9 +753,9 @@
   });
 
   function updateHeader(){
-    document.getElementById('headerName').textContent = get(LS.name,'カラスバ');
+    document.getElementById('headerName').textContent = get(LS.name,'紫堂');
     const t = curThread();
-    document.getElementById('headerSub').textContent = t ? ((t.rp ? '🎭 ' : '💬 ') + t.name) : 'おう、来たか';
+    document.getElementById('headerSub').textContent = t ? ((t.rp ? '🎭 ' : '💬 ') + t.name) : 'おや、いらっしゃい';
   }
 
   function lastTsOf(id){
@@ -931,7 +931,7 @@
     if (visible.length === 0){
       const hint = document.createElement('div');
       hint.className = 'empty-hint';
-      hint.innerHTML = '<b>' + esc(get(LS.name,'カラスバ')) + '</b><br>が待ってるよ。<br>話しかけてみて🌙';
+      hint.innerHTML = '<b>' + esc(get(LS.name,'紫堂')) + '</b><br>が待ってるよ。<br>話しかけてみて🌙';
       chatEl.appendChild(hint);
       return;
     }
@@ -1349,7 +1349,7 @@
       typing.remove();
       const transient = /internal error|overloaded|unavailable|try again|503|500|429/i.test(err.message);
       if (transient){
-        addBubble('error','いま回線が混んでるみたい…💦 少し待って、カラスバさんの返事をタップで「やり直し」してみてね（Gemmaは混雑時に出やすいよ）');
+        addBubble('error','いま回線が混んでるみたい…💦 少し待って、紫堂さんの返事をタップで「やり直し」してみてね（Gemmaは混雑時に出やすいよ）');
       } else {
         addBubble('error','エラー: ' + err.message + '\n（⚙︎でAPIキー・モデル名を確認してね）');
       }
@@ -1764,7 +1764,7 @@
   /* ---------- export thread as readable text ---------- */
   document.getElementById('exportBtn').addEventListener('click', () => {
     const t = curThread();
-    const name = get(LS.name,'カラスバ');
+    const name = get(LS.name,'紫堂');
     const lines = [];
     lines.push('「' + (t ? t.name : '') + '」の会話記録 — ' + name + ' と私');
     lines.push('書き出し: ' + nowStr());
@@ -1848,7 +1848,7 @@
       row.className = 'hit-row';
       const meta = document.createElement('div');
       meta.className = 'hit-meta';
-      const who = hit.m.role === 'model' ? get(LS.name,'カラスバ') : '私';
+      const who = hit.m.role === 'model' ? get(LS.name,'紫堂') : '私';
       meta.textContent = '💬 ' + hit.t.name + ' ・ ' + who +
         (hit.m.ts ? ' ・ ' + fmtDate(hit.m.ts) + ' ' + fmtTime(hit.m.ts) : '');
       const body = document.createElement('div');
@@ -1959,7 +1959,7 @@
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
     document.getElementById('safetySel').value = get(LS.safety,'default');
     document.getElementById('worldSel').value = get(LS.world,'app');
-    document.getElementById('charName').value = get(LS.name,'カラスバ');
+    document.getElementById('charName').value = get(LS.name,'紫堂');
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
     document.getElementById('memory').value = get(LS.mem,'');
     document.getElementById('annivList').value = get(LS.anniv,'');
@@ -1992,7 +1992,7 @@
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
     localStorage.setItem(LS.world, document.getElementById('worldSel').value);
-    localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || 'カラスバ');
+    localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || '紫堂');
     localStorage.setItem(LS.sys, document.getElementById('sysPrompt').value.trim() || DEFAULT_SYS);
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
     localStorage.setItem(LS.anniv, document.getElementById('annivList').value.trim());
@@ -2040,7 +2040,7 @@
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     const d = new Date();
-    a.download = get(LS.name,'カラスバ') + '_backup_' + d.getFullYear() +
+    a.download = get(LS.name,'紫堂') + '_backup_' + d.getFullYear() +
       ('0' + (d.getMonth()+1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '.json';
     document.body.appendChild(a);
     a.click();
@@ -2151,7 +2151,7 @@
     const li = lastVisibleIndex();
     if (li < 0) return;
 
-    // カラスバの最後の返事をタップ → 返事のやり直し
+    // 紫堂の最後の返事をタップ → 返事のやり直し
     if (isAi && b === last && history[li] && history[li].role === 'model' && !history[li].diary){
       if (!confirm('この返事をやり直してもらう？')) return;
       history.splice(li, 1);
@@ -2322,7 +2322,7 @@
     try { favs = JSON.parse(get(LS.favs,'[]')); } catch(e){}
     const memLines = get(LS.mem,'').split('\n').filter(l => l.trim()).length;
     const days = firstTs ? (Math.floor((Date.now() - firstTs) / 86400000) + 1) : 0;
-    const cname = get(LS.name,'カラスバ');
+    const cname = get(LS.name,'紫堂');
     let s = '';
     if (firstTs) s += '🗓 ' + cname + 'とこのアプリで話し始めて ' + days + '日目\n';
     s += '💬 交わした言葉 ' + total + '通（保存されている範囲で）\n';
@@ -2345,7 +2345,7 @@
       row.className = 'hit-row';
       const meta = document.createElement('div');
       meta.className = 'hit-meta';
-      const who = f.role === 'model' ? get(LS.name,'カラスバ') : '私';
+      const who = f.role === 'model' ? get(LS.name,'紫堂') : '私';
       meta.textContent = '⭐ ' + who + (f.tn ? ' ・ 💬' + f.tn : '') + (f.ts ? ' ・ ' + fmtDate(f.ts) : '');
       const body = document.createElement('div');
       body.className = 'hit-text';
@@ -2432,7 +2432,7 @@
     imgInput.value = '';
     attachPreview.hidden = true;
 
-    // YouTubeリンク検出（カラスバさんが動画を見れるように）
+    // YouTubeリンク検出（紫堂さんが動画を見れるように）
     const ytMatch = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)[\w-]+|youtu\.be\/[\w-]+)\S*/);
     const ytUrl = ytMatch ? ytMatch[0] : null;
 
