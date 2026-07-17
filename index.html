@@ -295,6 +295,7 @@
     transform:translateY(105%);transition:transform .3s ease;
   }
   .sheet.show{transform:none}
+  #sheet{height:86dvh}  /* タブ切替で高さが伸び縮みしないよう固定 */
   .sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--ink-dim);margin:0 auto 16px;opacity:.5}
   .sheet-title{font-size:16px;font-weight:700;color:var(--ao);margin-bottom:14px}
   .field{margin-bottom:16px}
@@ -2209,6 +2210,7 @@
     document.querySelectorAll('#sheet [data-pane]').forEach(el => {
       el.style.display = (el.dataset.pane === tab) ? '' : 'none';
     });
+    sheet.scrollTop = 0;
   }
   document.querySelectorAll('#sheet .stab').forEach(b =>
     b.addEventListener('click', () => showTab(b.dataset.tab)));
