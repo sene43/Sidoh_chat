@@ -164,6 +164,25 @@
     cursor:pointer;z-index:6;
   }
   #toBottom.show{display:flex}
+  #actBar{
+    position:fixed;left:12px;right:12px;
+    bottom:calc(env(safe-area-inset-bottom) + 76px);
+    display:flex;gap:8px;z-index:7;
+    background:var(--surface2);
+    border:1px solid rgba(183,110,121,.4);
+    border-radius:16px;padding:8px;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  #actBar[hidden]{display:none}
+  #actBar button{
+    padding:11px 8px;border:none;border-radius:11px;
+    background:var(--surface);color:var(--ink);
+    font-family:inherit;font-size:13.5px;cursor:pointer;
+  }
+  #actBar #actCopy{flex:1}
+  #actBar #actMain{flex:1.4;color:var(--ao);font-weight:700}
+  #actBar #actCancel{flex:0 0 44px;color:var(--ink-dim)}
+  body.light #actBar{box-shadow:0 6px 18px rgba(70,61,53,.25)}
   body.light #toBottom{background:rgba(255,255,255,.94);box-shadow:0 3px 10px rgba(70,61,53,.2)}
   .typing{
     align-self:flex-start;display:flex;gap:5px;
@@ -406,6 +425,11 @@
 
 <main id="chat" aria-live="polite"></main>
 <button id="toBottom" aria-label="最新のメッセージへ">⬇</button>
+<div id="actBar" hidden>
+  <button type="button" id="actCopy">📋 コピー</button>
+  <button type="button" id="actMain"></button>
+  <button type="button" id="actCancel">✕</button>
+</div>
 
 <div id="attachPreview" hidden>
   <img id="attachThumb" alt="送信予定の写真">
@@ -433,6 +457,7 @@
     <label for="menuModelSel">🤖 いまのモデル（すぐ切替）</label>
     <select id="menuModelSel"></select>
     <div class="hint">切り替えは次のメッセージから反映。細かい設定・APIキーは⚙︎へ。</div>
+    <div class="hint" id="tokLine" style="margin-top:8px"></div>
   </div>
   <button id="topicBtn" class="menu-row">🎲 話題を振ってもらう</button>
   <button id="letterBtn" class="menu-row">💌 手紙を書いてもらう</button>
@@ -671,7 +696,8 @@
     uname: KP + 'uname',
     uintro: KP + 'uintro',
     uavatar: KP + 'uavatar',
-    fsize: KP + 'fsize'
+    fsize: KP + 'fsize',
+    tok:   KP + 'tokstats'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -1091,6 +1117,19 @@
   }
 
   /* ---------- Gemini call ---------- */
+  function addTokens(inTok, outTok){
+    try {
+      const d = new Date();
+      const today = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+      let s = {};
+      try { s = JSON.parse(get(LS.tok,'{}')); } catch(e){}
+      if (s.d !== today) s = { d: today, i: 0, o: 0 };
+      s.i += (inTok || 0);
+      s.o += (outTok || 0);
+      localStorage.setItem(LS.tok, JSON.stringify(s));
+    } catch(e){}
+  }
+
   function providerOf(model){
     if (model.indexOf('/') !== -1) return 'openrouter';
     if (/^(gpt|o\d|chatgpt)/i.test(model)) return 'openai';
@@ -1244,6 +1283,17 @@
       if (!transient) throw new Error(msg);
     }
     if (!res || !res.ok) throw new Error(lastErr || 'Internal error');
+
+    // 使用トークンを記録（各社の返事に正確な数が入っている）
+    try {
+      if (provider === 'gemini' && data.usageMetadata){
+        addTokens(data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount);
+      } else if ((provider === 'openai' || provider === 'openrouter') && data.usage){
+        addTokens(data.usage.prompt_tokens, data.usage.completion_tokens);
+      } else if (provider === 'anthropic' && data.usage){
+        addTokens(data.usage.input_tokens, data.usage.output_tokens);
+      }
+    } catch(e){}
 
     let reply = extract(data) || '';
     if (reply){
@@ -2137,10 +2187,33 @@
     return -1;
   }
 
+  /* ---------- message action bar ---------- */
+  let actCtx = null;
+  const actBar = document.getElementById('actBar');
+  function showActBar(text, mainLabel, mainFn){
+    actCtx = { text: text, mainFn: mainFn };
+    document.getElementById('actMain').textContent = mainLabel;
+    actBar.hidden = false;
+  }
+  function hideActBar(){ actBar.hidden = true; actCtx = null; }
+  document.getElementById('actCancel').addEventListener('click', hideActBar);
+  document.getElementById('actCopy').addEventListener('click', async () => {
+    if (!actCtx) return;
+    try { await navigator.clipboard.writeText(actCtx.text); } catch(e){}
+    const btn = document.getElementById('actCopy');
+    btn.textContent = '✓ コピーした！';
+    setTimeout(() => { btn.textContent = '📋 コピー'; hideActBar(); }, 700);
+  });
+  document.getElementById('actMain').addEventListener('click', () => {
+    const fn = actCtx && actCtx.mainFn;
+    hideActBar();
+    if (fn) fn();
+  });
+
   chatEl.addEventListener('click', e => {
     if (busy) return;
     const b = e.target.closest('.msg');
-    if (!b) return;
+    if (!b){ hideActBar(); return; }
     const isUser = b.classList.contains('user') && !b.classList.contains('photo');
     const isAi = b.classList.contains('ai');
     if (!isUser && !isAi) return;
@@ -2152,52 +2225,58 @@
     const li = lastVisibleIndex();
     if (li < 0) return;
 
-    // 紫堂の最後の返事をタップ → 返事のやり直し
+    // 最後の相手の返事 → コピー or やり直し
     if (isAi && b === last && history[li] && history[li].role === 'model' && !history[li].diary){
-      if (!confirm('この返事をやり直してもらう？')) return;
-      history.splice(li, 1);
-      saveHistory();
-      renderAll();
-      aiTurn(null);
+      const idx = li;
+      showActBar(history[idx].text, '🔄 返事をやり直す', () => {
+        history.splice(idx, 1);
+        saveHistory();
+        renderAll();
+        aiTurn(null);
+      });
       return;
     }
 
-    // 自分の最後のメッセージをタップ → 打ち直し
+    // 自分の最後のメッセージ → コピー or 打ち直し
     if (isUser && (b === last || b === secondLast)){
       let ui = -1;
       for (let i = history.length-1; i >= 0; i--){
         if (!history[i].hidden && history[i].role === 'user'){ ui = i; break; }
       }
-      if (ui < 0) return;
-      const after = history.slice(ui+1).filter(m => !m.hidden);
-      if (after.length > 1) return; // 直後の返事1件までなら巻き戻せる
-      if (!confirm('このメッセージを打ち直す？（この発言と、それへの返事は消えるよ）')) return;
-      inputEl.value = history[ui].text
-        .replace(/\n（写真を1枚見せた）$/, '')
-        .replace(/^（写真を1枚見せた）$/, '');
-      history = history.slice(0, ui);
-      saveHistory();
-      renderAll();
-      inputEl.style.height = 'auto';
-      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-      inputEl.focus();
-      return;
+      if (ui >= 0){
+        const after = history.slice(ui+1).filter(m => !m.hidden);
+        if (after.length <= 1){
+          showActBar(history[ui].text, '✏️ 打ち直す（この往復は消える）', () => {
+            inputEl.value = history[ui].text
+              .replace(/\n（写真を1枚見せた）$/, '')
+              .replace(/^（写真を1枚見せた）$/, '');
+            history = history.slice(0, ui);
+            saveHistory();
+            renderAll();
+            inputEl.style.height = 'auto';
+            inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+            inputEl.focus();
+          });
+          return;
+        }
+      }
     }
 
-    // それ以外（＝昔のメッセージ）のタップ → ⭐アルバムに保存
+    // 昔のメッセージ → コピー or ⭐保存
     const hidx = b.dataset.hidx;
     if (hidx === undefined) return;
     const m = history[Number(hidx)];
     if (!m || m.hidden || m.diary) return;
-    if (!confirm('この台詞を⭐アルバムに保存する？')) return;
-    let favs = [];
-    try { favs = JSON.parse(get(LS.favs,'[]')); } catch(e){ favs = []; }
-    const tcur = curThread();
-    favs.unshift({ text: m.text, role: m.role, ts: m.ts || 0, tn: tcur ? tcur.name : '', saved: Date.now() });
-    if (favs.length > 200) favs = favs.slice(0, 200);
-    localStorage.setItem(LS.favs, JSON.stringify(favs));
-    b.classList.add('flash');
-    setTimeout(() => b.classList.remove('flash'), 1500);
+    showActBar(m.text, '⭐ アルバムに保存', () => {
+      let favs = [];
+      try { favs = JSON.parse(get(LS.favs,'[]')); } catch(e){ favs = []; }
+      const tcur = curThread();
+      favs.unshift({ text: m.text, role: m.role, ts: m.ts || 0, tn: tcur ? tcur.name : '', saved: Date.now() });
+      if (favs.length > 200) favs = favs.slice(0, 200);
+      localStorage.setItem(LS.favs, JSON.stringify(favs));
+      b.classList.add('flash');
+      setTimeout(() => b.classList.remove('flash'), 1500);
+    });
   });
 
   /* ---------- fav sheet (album) ---------- */
@@ -2302,9 +2381,23 @@
   document.getElementById('menuModelSel').addEventListener('change', (e) => {
     localStorage.setItem(LS.model, e.target.value);
   });
+  function updateTokLine(){
+    let s = {};
+    try { s = JSON.parse(get(LS.tok,'{}')); } catch(e){}
+    const d = new Date();
+    const today = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+    const line = document.getElementById('tokLine');
+    if (s.d === today && (s.i || s.o)){
+      line.textContent = '🪙 今日の会話量：送信 ' + (s.i||0).toLocaleString() + ' ／ 受信 ' + (s.o||0).toLocaleString() + ' トークン（無料枠モデルなら気にしなくてOK）';
+    } else {
+      line.textContent = '🪙 今日はまだ会話していないよ';
+    }
+  }
+
   document.getElementById('openMenu').addEventListener('click', () => {
     closeSheets();
     populateMenuModel();
+    updateTokLine();
     menuSheet.classList.add('show');
     overlay.classList.add('show');
   });
