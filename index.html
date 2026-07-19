@@ -551,6 +551,16 @@
     <div class="hint">「一緒にいる」にすると、画面・スマホ・アプリの存在に触れず、同じ空間で直接会話してる前提になるよ🏠</div>
   </div>
 
+  <div class="field" data-pane="act">
+    <label for="depthSel">🧠 会話の記憶の深さ</label>
+    <select id="depthSel">
+      <option value="40">ふつう（直近40件・節約）</option>
+      <option value="120">深い（直近120件）</option>
+      <option value="200">全部（保存されている約200件）</option>
+    </select>
+    <div class="hint">「先月耳鼻科行ったよね」みたいな些細な話も覚えていてほしいなら深く。深いほど1通あたりのトークン消費が増えるよ（無料枠のGemmaやFlashなら気にしなくてOK、Pro級は節約推奨）。大事なことは今まで通り💭で思い出ノートへ。</div>
+  </div>
+
   <div class="field" data-pane="conn">
     <label for="safetySel">セーフティフィルタ</label>
     <select id="safetySel">
@@ -697,7 +707,9 @@
     uintro: KP + 'uintro',
     uavatar: KP + 'uavatar',
     fsize: KP + 'fsize',
-    tok:   KP + 'tokstats'
+    tok:   KP + 'tokstats',
+    mrecent: KP + 'mrecent',
+    depth: KP + 'depth'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -1032,7 +1044,11 @@
 
   // 長い返事は先頭から読めるように、そのメッセージの頭までスクロール
   function scrollToMsg(node){
-    const go = () => { chatEl.scrollTop = Math.max(0, node.offsetTop - 10); updateToBottom(); };
+    const go = () => {
+      const delta = node.getBoundingClientRect().top - chatEl.getBoundingClientRect().top;
+      chatEl.scrollTop = Math.max(0, chatEl.scrollTop + delta - 8);
+      updateToBottom();
+    };
     requestAnimationFrame(go);
     setTimeout(go, 120); // レイアウト確定後にもう一度合わせて精度を上げる
   }
@@ -1117,6 +1133,21 @@
   }
 
   /* ---------- Gemini call ---------- */
+  function recentModels(){
+    try {
+      const l = JSON.parse(get(LS.mrecent,'[]'));
+      if (Array.isArray(l)) return l.filter(x => typeof x === 'string').slice(0, 6);
+    } catch(e){}
+    return [];
+  }
+  function markModelUsed(m){
+    try {
+      let l = recentModels().filter(x => x !== m);
+      l.unshift(m);
+      localStorage.setItem(LS.mrecent, JSON.stringify(l.slice(0, 6)));
+    } catch(e){}
+  }
+
   function addTokens(inTok, outTok){
     try {
       const d = new Date();
@@ -1128,6 +1159,11 @@
       s.o += (outTok || 0);
       localStorage.setItem(LS.tok, JSON.stringify(s));
     } catch(e){}
+  }
+
+  function histDepth(){
+    const d = parseInt(get(LS.depth,'40'), 10);
+    return (d === 120 || d === 200) ? d : 40;
   }
 
   function providerOf(model){
@@ -1151,7 +1187,7 @@
     const sys = fullSystemPrompt();
 
     // 会話履歴を共通形式に
-    const turns = history.slice(-40).map(m => ({
+    const turns = history.slice(-histDepth()).map(m => ({
       role: m.role === 'model' ? 'assistant' : 'user',
       text: m.text
     }));
@@ -1219,7 +1255,7 @@
     } else {
       const apiKey = get(LS.key,'');
       if (!apiKey) throw new Error('GeminiのAPIキーが未設定だよ。⚙︎で入れてね');
-      const msgs = history.slice(-40).map(m => ({
+      const msgs = history.slice(-histDepth()).map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
       }));
@@ -1306,7 +1342,7 @@
       if (provider === 'gemini' && /no longer available|interactions/i.test(err.message)){
         const gKey = get(LS.key,'');
         let convo = fullSystemPrompt() + '\n\n【これまでの会話】\n';
-        history.slice(-40).forEach(m => {
+        history.slice(-histDepth()).forEach(m => {
           convo += (m.role === 'model' ? '相手' : 'ユーザー') + '：' + m.text + '\n';
         });
         if (extraHiddenPrompt) convo += 'ユーザー：' + extraHiddenPrompt + '\n';
@@ -1341,6 +1377,7 @@
         m.replace(/[＝？＆／：．＋]/g, c =>
           ({'＝':'=','？':'?','＆':'&','／':'/','：':':','．':'.','＋':'+'}[c])));
     }
+    if (reply) markModelUsed(model);
     if (reply && provider === 'gemini' && /gemma/i.test(model)) reply = stripLeak(reply);
     if (reply && provider === 'gemini' && /gemma/i.test(model)) reply = stripLabels(reply);
     return reply;
@@ -1984,11 +2021,26 @@
     const list = modelList();
     if (cur && list.indexOf(cur) === -1) list.unshift(cur);
     modelSel.innerHTML = '';
+    const recents = recentModels().filter(m => list.indexOf(m) !== -1 || m === cur);
+    if (recents.length){
+      const g1 = document.createElement('optgroup');
+      g1.label = '★ よく使う';
+      recents.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m; o.textContent = m;
+        g1.appendChild(o);
+      });
+      modelSel.appendChild(g1);
+    }
+    const g2 = document.createElement('optgroup');
+    g2.label = 'すべてのモデル';
     list.forEach(m => {
+      if (recents.indexOf(m) !== -1) return;
       const o = document.createElement('option');
       o.value = m; o.textContent = m;
-      modelSel.appendChild(o);
+      g2.appendChild(o);
     });
+    modelSel.appendChild(g2);
     const custom = document.createElement('option');
     custom.value = '__custom';
     custom.textContent = 'その他（手入力する）…';
@@ -2044,6 +2096,7 @@
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
     document.getElementById('safetySel').value = get(LS.safety,'default');
     document.getElementById('worldSel').value = get(LS.world,'app');
+    document.getElementById('depthSel').value = get(LS.depth,'40');
     document.getElementById('charName').value = get(LS.name,'紫堂');
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
     document.getElementById('memory').value = get(LS.mem,'');
@@ -2083,6 +2136,7 @@
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
     localStorage.setItem(LS.world, document.getElementById('worldSel').value);
+    localStorage.setItem(LS.depth, document.getElementById('depthSel').value);
     localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || '紫堂');
     localStorage.setItem(LS.sys, document.getElementById('sysPrompt').value.trim() || DEFAULT_SYS);
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
@@ -2408,17 +2462,29 @@
   function populateMenuModel(){
     const sel = document.getElementById('menuModelSel');
     const cur = get(LS.model,'gemini-2.5-flash');
-    const list = modelList();
+    let list = recentModels();
+    if (!list.length) list = DEFAULT_MODELS.slice(0, 4);
     if (cur && list.indexOf(cur) === -1) list.unshift(cur);
+    list = list.slice(0, 6);
     sel.innerHTML = '';
     list.forEach(m => {
       const o = document.createElement('option');
       o.value = m; o.textContent = m;
       sel.appendChild(o);
     });
+    const other = document.createElement('option');
+    other.value = '__all';
+    other.textContent = 'その他のモデル…（⚙︎で選ぶ）';
+    sel.appendChild(other);
     sel.value = cur;
+    if (sel.value !== cur) sel.value = list[0];
   }
   document.getElementById('menuModelSel').addEventListener('change', (e) => {
+    if (e.target.value === '__all'){
+      closeSheets();
+      openSheet();
+      return;
+    }
     localStorage.setItem(LS.model, e.target.value);
   });
   function updateTokLine(){
