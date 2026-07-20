@@ -1779,7 +1779,18 @@
           history.push({role:'model', text:'（写真を1枚送った）', ts:Date.now()});
           saveHistory();
         } else {
-          addBubble('error','画像が返ってこなかったよ。⚙︎の画像モデル名を確認してみて');
+          // 診断: モデルが実際に何を返したかを表示する
+          let diag = '';
+          try {
+            if (parts.length === 0){
+              const fr = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
+              const block = data.promptFeedback && data.promptFeedback.blockReason;
+              diag = '（返答が空。finishReason: ' + (fr || '不明') + (block ? ' / block: ' + block : '') + '）';
+            } else {
+              diag = '（返ってきた内容: ' + parts.map(pp => pp.text ? 'テキスト' : Object.keys(pp).join(',')).join(' / ') + '）';
+            }
+          } catch(e){}
+          addBubble('error','画像が返ってこなかったよ。⚙︎の画像モデル名を確認してみて ' + diag);
         }
       }
     } catch(err){
