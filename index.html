@@ -541,6 +541,9 @@
     <input type="text" id="imgModel" placeholder="gemini-2.5-flash-image">
     <button type="button" class="btn line" id="findImgBtn" style="margin-top:8px;padding:9px;font-size:13px">🔍 使える画像モデルを探す</button>
     <div class="hint" id="imgFindResult" style="margin-top:6px"></div>
+    <label for="imgLook" style="margin-top:12px;display:block">📷用の見た目メモ（画像生成のとき最優先）</label>
+    <textarea id="imgLook" style="min-height:80px" placeholder="例：紫堂＝黒髪で犬っぽい雰囲気の日本人の青年。私＝眼鏡でオリーブ色の外ハネヘアの女性。絵柄はアニメイラスト風。"></textarea>
+    <div class="hint">誰が写るか・髪型・絵柄（アニメ風／イラスト風／写真風）を簡潔に。これが無いと知らない人が出がち🤣</div>
     <div class="hint">📷ボタンで使うモデル。gemini-2.5-flash-image（Geminiキー・要支払い設定）か gpt-image-1（OpenAIキー）が使えるよ。生成画像はページを閉じると消えます。</div>
   </div>
 
@@ -711,7 +714,8 @@
     fsize: KP + 'fsize',
     tok:   KP + 'tokstats',
     mrecent: KP + 'mrecent',
-    depth: KP + 'depth'
+    depth: KP + 'depth',
+    imgLook: KP + 'imglook'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -1420,17 +1424,107 @@
     }
     let out = lines.slice(start, end + 1).join('\n').trim();
     if (!out) return text.trim();
+    out = stripAnnotations(out);
+    out = dedupeReply(out);
+    out = stripEchoQuotes(out);
+    out = stripQuotedDraft(out);
+    out = stripLeadEng(out);
     return dedupeReply(out);
   }
 
+  // (Sentiment) (Physical affection/...) など英語の分類ラベルを除去
+  function stripAnnotations(t){
+    return t.replace(/\((?=[A-Za-z])[A-Za-z0-9 ,\/&\-]{2,}\)/g, '');
+  }
+
+  // 先頭の「引用符付き下書き」を、同じ内容が後で再登場する場合だけ剥がす
+  // （下書きの引用は本文で繰り返される。本物のセリフ引用は繰り返されないので無傷）
+  function stripEchoQuotes(t){
+    const norm = s => s.replace(/[\s"\u201c\u201d\uff02『』「」]/g, '');
+    let guard = 0;
+    while (guard++ < 8){
+      const lines = t.split('\n');
+      let i = 0;
+      while (i < lines.length && !lines[i].trim()) i++;
+      if (i >= lines.length) break;
+      const s = lines[i].trim();
+      if (!/^["\u201c\uff02\u300c\u300e]/.test(s)) break;
+      let lastQ = -1;
+      for (let k = s.length - 1; k > 0; k--){
+        if ('"\u201d\uff02\u300d\u300f'.indexOf(s[k]) !== -1){ lastQ = k; break; }
+      }
+      if (lastQ <= 0) break;
+      const inner = s.slice(1, lastQ);
+      const after = s.slice(lastQ + 1).trim();
+      const rest = (after ? after + '\n' : '') + lines.slice(i + 1).join('\n');
+      if (inner.trim() && norm(rest).indexOf(norm(inner)) !== -1){
+        t = rest.trim();
+      } else break;
+    }
+    return t;
+  }
+
+  // 引用符付きの下書きブロック（2行以上）を除去。閉じ引用符の直後に本文が接着していても剥がす
+  function stripQuotedDraft(t){
+    const lines = t.split('\n');
+    let qCount = 0;
+    for (const l of lines){
+      const s = l.trim();
+      if (!s) continue;
+      if (/^["\u201c\uff02]/.test(s)) qCount++;
+      else break;
+    }
+    if (qCount < 2) return t; // 引用1行だけなら本物のセリフかもしれないので触らない
+    let i = 0;
+    while (i < lines.length){
+      const s = lines[i].trim();
+      if (!s){ i++; continue; }
+      if (/^["\u201c\uff02]/.test(s)){
+        const lastQ = Math.max(s.lastIndexOf('"'), s.lastIndexOf('\u201d'), s.lastIndexOf('\uff02'));
+        const after = lastQ >= 0 ? s.slice(lastQ + 1).trim() : '';
+        if (after){ lines[i] = after; break; }
+        i++;
+      } else break;
+    }
+    const out = lines.slice(i).join('\n').trim();
+    return out || t;
+  }
+
+  // 先頭行に融合した英語メモ（Keep it casual... 等）を切除
+  function stripLeadEng(t){
+    const lines = t.split('\n');
+    let i = 0;
+    while (i < lines.length && !lines[i].trim()) i++;
+    if (i >= lines.length) return t;
+    const s = lines[i].trim();
+    const jpRe = /[ぁ-んァ-ヶ一-龯]/;
+    if (/^[A-Za-z"'*\[]/.test(s) && jpRe.test(s)){
+      const m = s.search(jpRe);
+      if (m > 12){
+        let st = m;
+        if (m > 0 && (s[m-1] === '（' || s[m-1] === '(')) st = m - 1;
+        lines[i] = s.slice(st);
+        return lines.join('\n');
+      }
+    }
+    return t;
+  }
+
   // 下書きと完成版で同じ本文が2回出てきたら、後半（完成版）だけ残す
+  // 目印は「最初の一文から引用記号を剥がした中身」（全角＂などにも対応）
+  const QCHARS = '"\u201c\u201d\uff02\u300c\u300d\u300e\u300f';
   function dedupeReply(t){
     const lines = t.split('\n');
     const firstLine = (lines.find(l => l.trim()) || '').trim();
-    if (firstLine.length < 10) return t;
-    const lastIdx = t.lastIndexOf(firstLine);
-    const firstIdx = t.indexOf(firstLine);
-    if (lastIdx > firstIdx && lastIdx > t.length * 0.25){
+    let a = 0, b = firstLine.length;
+    while (a < b && QCHARS.indexOf(firstLine[a]) !== -1) a++;
+    while (b > a && QCHARS.indexOf(firstLine[b-1]) !== -1) b--;
+    const probe = firstLine.slice(a, b).trim();
+    if (probe.length < 8) return t;
+    const firstIdx = t.indexOf(probe);
+    if (firstIdx === -1) return t;
+    const lastIdx = t.lastIndexOf(probe);
+    if (lastIdx > firstIdx && lastIdx > t.length * 0.2){
       const tail = t.slice(lastIdx).trim();
       if (tail.length >= t.length * 0.35) return tail;
     }
@@ -1704,8 +1798,23 @@
   });
 
   /* ---------- photo ---------- */
+  function buildImgPrompt(ask){
+    const look = get(LS.imgLook,'').trim();
+    const cname = get(LS.name,'紫堂');
+    const recent = history.filter(m => !m.hidden).slice(-6)
+      .map(m => (m.role === 'model' ? cname : '私') + ': ' + m.text).join('\n');
+    let p2 = '恋人にスマホで送る写真を1枚生成してください。スマホ写真らしい自然な構図。\n';
+    if (look) p2 += '【登場人物の見た目・絵のスタイル（最優先で厳守）】\n' + look + '\n';
+    if (ask) p2 += '【リクエスト（優先）】' + ask + '\n';
+    p2 += '【直近の会話（場面の参考に）】\n' + recent;
+    return p2;
+  }
+
   photoBtn.addEventListener('click', async () => {
     if (busy) return;
+    const askInput = window.prompt('どんな写真がいい？（空欄＝会話の流れにおまかせ）', '');
+    if (askInput === null) return; // キャンセル
+    const ask = askInput.trim();
     const imConf = get(LS.imgModel,'') || 'gemini-2.5-flash-image';
     const imKeyMissing = /^(gpt-image|dall-e)/i.test(imConf) ? !get(LS.oaKey,'') : !get(LS.key,'');
     if (imKeyMissing){ addBubble('error','画像モデル用のAPIキーが未設定だよ。⚙︎から入れてね'); openSheet(); return; }
@@ -1718,8 +1827,7 @@
         // OpenAI画像生成
         const oaKey = get(LS.oaKey,'');
         if (!oaKey) throw new Error('OpenAIのAPIキーが未設定だよ（⚙︎で入れてね）');
-        const recentOA = history.filter(m=>!m.hidden).slice(-6).map(m => (m.role==='model'?'相手':'ユーザー') + ': ' + m.text).join('\n');
-        const promptOA = '次のキャラクター設定と直近の会話の流れに合う、キャラクターが恋人に今スマホで撮って送りそうな写真を1枚生成して。スマホ写真らしい自然な構図で。\n【設定】' + fullSystemPrompt() + '\n【直近の会話】\n' + recentOA;
+        const promptOA = buildImgPrompt(ask);
         const resOA = await fetch('https://api.openai.com/v1/images/generations', {
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer ' + oaKey},
@@ -1744,24 +1852,33 @@
         sendBtn.disabled = false; photoBtn.disabled = false; diaryBtn.disabled = false; memoryBtn.disabled = false; letterBtn.disabled = false; topicBtn.disabled = false;
         return;
       }
-      const recent = history.filter(m=>!m.hidden).slice(-6).map(m => (m.role==='model'?'相手':'ユーザー') + ': ' + m.text).join('\n');
-      const prompt = '次のキャラクター設定と直近の会話の流れに合う、キャラクターが恋人に今スマホで撮って送りそうな写真を1枚生成して。スマホ写真らしい自然な構図で。\n【設定】' + fullSystemPrompt() + '\n【直近の会話】\n' + recent;
+      const prompt = buildImgPrompt(ask);
 
       const imgKey = get(LS.key,'');
-      const res = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/' +
-        encodeURIComponent(imgModel) + ':generateContent?key=' + encodeURIComponent(imgKey),
-        {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: prompt }] }], generationConfig:{ responseModalities:['TEXT','IMAGE'] } })
-        }
-      );
-      const data = await res.json();
+      const imgUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+        encodeURIComponent(imgModel) + ':generateContent?key=' + encodeURIComponent(imgKey);
+      const imgBody = JSON.stringify({ contents:[{ role:'user', parts:[{ text: prompt }] }], generationConfig:{ responseModalities:['TEXT','IMAGE'] } });
+      // 混雑エラーは少し待って自動リトライ（最大3回）
+      let res, data, lastMsg = '';
+      for (let attempt = 0; attempt < 3; attempt++){
+        if (attempt > 0) await new Promise(r => setTimeout(r, 2000 * attempt));
+        try {
+          res = await fetch(imgUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: imgBody });
+        } catch(netErr){ lastMsg = netErr.message; continue; }
+        data = await res.json();
+        if (res.ok) break;
+        lastMsg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
+        const transient = res.status === 429 || res.status === 500 || res.status === 503 ||
+          /high demand|overloaded|unavailable|try again/i.test(lastMsg);
+        if (!transient) break;
+      }
       typing.remove();
-      if (!res.ok){
-        const msg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
-        addBubble('error','画像エラー: ' + msg);
+      if (!res || !res.ok){
+        if (/high demand|overloaded|unavailable|try again|429|503/i.test(lastMsg)){
+          addBubble('error','📷 画像サーバーが混んでるみたい…💦 少し時間を置くか、⚙︎で別の画像モデル（gemini-3-pro-image など）に変えて試してみて');
+        } else {
+          addBubble('error','画像エラー: ' + lastMsg);
+        }
       } else {
         let found = false;
         const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
@@ -2133,6 +2250,7 @@
     document.getElementById('orKey').value = get(LS.orKey,'');
     populateModelSelect();
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
+    document.getElementById('imgLook').value = get(LS.imgLook,'');
     document.getElementById('safetySel').value = get(LS.safety,'default');
     document.getElementById('worldSel').value = get(LS.world,'app');
     const dt = curThread();
@@ -2175,6 +2293,7 @@
     localStorage.setItem(LS.orKey, document.getElementById('orKey').value.trim());
     localStorage.setItem(LS.model, selectedModel());
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
+    localStorage.setItem(LS.imgLook, document.getElementById('imgLook').value.trim());
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
     localStorage.setItem(LS.world, document.getElementById('worldSel').value);
     const dts = curThread();
