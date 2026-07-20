@@ -539,6 +539,8 @@
   <div class="field" data-pane="conn">
     <label for="imgModel">画像モデル名</label>
     <input type="text" id="imgModel" placeholder="gemini-2.5-flash-image">
+    <button type="button" class="btn line" id="findImgBtn" style="margin-top:8px;padding:9px;font-size:13px">🔍 使える画像モデルを探す</button>
+    <div class="hint" id="imgFindResult" style="margin-top:6px"></div>
     <div class="hint">📷ボタンで使うモデル。gemini-2.5-flash-image（Geminiキー・要支払い設定）か gpt-image-1（OpenAIキー）が使えるよ。生成画像はページを閉じると消えます。</div>
   </div>
 
@@ -922,6 +924,8 @@
     if (t && t.name !== '日常') out += '\n\n【いまの話題】この会話スレッドのテーマは「' + t.name + '」。';
     if (get(LS.world,'app') === 'together'){
       out += '\n\n【世界観（厳守）】あなたと相手は同じ家で一緒に暮らしていて、いま同じ空間でそばにいて直接会話している。スマホ・画面・アプリ・メッセージ・チャット・AIといった概念には一切言及しない。返事や（ト書き）は、同じ部屋で顔を見て話している前提で描写する。';
+    } else {
+      out += '\n\n【いまはメッセージモード（厳守）】ふたりは離れた場所にいて、スマホのメッセージでやりとりしている。キャラ設定に行動描写・ト書きの指示があっても、このモードの間はそれより優先して、（）などによる行動描写・ナレーションは一切書かない。実際にスマホで打って送る文面だけを、短めのメッセージらしく送ること。絵文字や改行は自然に使ってよい。';
     }
     const rpMode = !!(curThread() && curThread().rp);
     if (rpMode){
@@ -1750,7 +1754,7 @@
         {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: prompt }] }] })
+          body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: prompt }] }], generationConfig:{ responseModalities:['TEXT','IMAGE'] } })
         }
       );
       const data = await res.json();
@@ -2087,6 +2091,28 @@
     }
     btn.disabled = false;
     setTimeout(() => { btn.textContent = '🔄 使えるモデル一覧を取得'; }, 3000);
+  });
+
+  document.getElementById('findImgBtn').addEventListener('click', async () => {
+    const apiKey = document.getElementById('apiKey').value.trim() || get(LS.key,'');
+    const out = document.getElementById('imgFindResult');
+    if (!apiKey){ out.textContent = '先にGeminiのAPIキーを入れてね'; return; }
+    out.textContent = '⏳ 探し中…';
+    try {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(apiKey));
+      const data = await res.json();
+      if (!res.ok) throw new Error((data.error && data.error.message) || ('HTTP ' + res.status));
+      const names = (data.models || [])
+        .filter(m => (m.supportedGenerationMethods || []).indexOf('generateContent') !== -1)
+        .map(m => m.name.replace(/^models\//, ''))
+        .filter(n => /image|imagen/i.test(n));
+      if (!names.length){ out.textContent = '画像対応モデルが見つからなかった…（アカウントの提供状況によるみたい）'; return; }
+      names.sort();
+      document.getElementById('imgModel').value = names[names.length - 1];
+      out.textContent = '✓ 見つかった: ' + names.join(' / ') + ' ／ いちばん新しそうなのを上に入れておいたよ。保存→📷で試してみて！';
+    } catch(e){
+      out.textContent = '✗ 探せなかった…（' + e.message + '）';
+    }
   });
 
   function openSheet(){
