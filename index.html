@@ -552,13 +552,13 @@
   </div>
 
   <div class="field" data-pane="act">
-    <label for="depthSel">🧠 会話の記憶の深さ</label>
+    <label for="depthSel">⏳ 記憶の深さ（今の話題：「<span id="depthWho"></span>」）</label>
     <select id="depthSel">
       <option value="40">ふつう（直近40件・節約）</option>
       <option value="120">深い（直近120件）</option>
       <option value="200">全部（保存されている約200件）</option>
     </select>
-    <div class="hint">「先月耳鼻科行ったよね」みたいな些細な話も覚えていてほしいなら深く。深いほど1通あたりのトークン消費が増えるよ（無料枠のGemmaやFlashなら気にしなくてOK、Pro級は節約推奨）。大事なことは今まで通り💭で思い出ノートへ。</div>
+    <div class="hint">この設定は「いま開いてる話題（部屋）」にだけ効くよ。どの部屋がどの深さかは💬リストの⏳マークで確認できる。深いほど1通あたりのトークン消費が増える（無料枠のGemmaやFlashなら気にしなくてOK、Pro級は節約推奨）。大事なことは今まで通り💭で思い出ノートへ。</div>
   </div>
 
   <div class="field" data-pane="conn">
@@ -826,7 +826,7 @@
       name.textContent = (t.rp ? '🎭 ' : '') + t.name;
       const time = document.createElement('div');
       time.className = 'thread-time';
-      time.textContent = relTime(lastTsOf(t.id));
+      time.textContent = relTime(lastTsOf(t.id)) + ' ・⏳' + (t.depth || 40);
       const mode = document.createElement('button');
       mode.className = 'thread-del';
       mode.textContent = t.rp ? '🎭' : '🕰';
@@ -1162,7 +1162,8 @@
   }
 
   function histDepth(){
-    const d = parseInt(get(LS.depth,'40'), 10);
+    const t = curThread();
+    const d = t && t.depth ? parseInt(t.depth, 10) : 40;
     return (d === 120 || d === 200) ? d : 40;
   }
 
@@ -1742,9 +1743,10 @@
       const recent = history.filter(m=>!m.hidden).slice(-6).map(m => (m.role==='model'?'相手':'ユーザー') + ': ' + m.text).join('\n');
       const prompt = '次のキャラクター設定と直近の会話の流れに合う、キャラクターが恋人に今スマホで撮って送りそうな写真を1枚生成して。スマホ写真らしい自然な構図で。\n【設定】' + fullSystemPrompt() + '\n【直近の会話】\n' + recent;
 
+      const imgKey = get(LS.key,'');
       const res = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/' +
-        encodeURIComponent(imgModel) + ':generateContent?key=' + encodeURIComponent(apiKey),
+        encodeURIComponent(imgModel) + ':generateContent?key=' + encodeURIComponent(imgKey),
         {
           method:'POST',
           headers:{'Content-Type':'application/json'},
@@ -2096,7 +2098,9 @@
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
     document.getElementById('safetySel').value = get(LS.safety,'default');
     document.getElementById('worldSel').value = get(LS.world,'app');
-    document.getElementById('depthSel').value = get(LS.depth,'40');
+    const dt = curThread();
+    document.getElementById('depthSel').value = String((dt && dt.depth) || 40);
+    document.getElementById('depthWho').textContent = dt ? dt.name : '';
     document.getElementById('charName').value = get(LS.name,'紫堂');
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
     document.getElementById('memory').value = get(LS.mem,'');
@@ -2136,7 +2140,8 @@
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
     localStorage.setItem(LS.world, document.getElementById('worldSel').value);
-    localStorage.setItem(LS.depth, document.getElementById('depthSel').value);
+    const dts = curThread();
+    if (dts){ dts.depth = parseInt(document.getElementById('depthSel').value, 10); saveThreads(); }
     localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || '紫堂');
     localStorage.setItem(LS.sys, document.getElementById('sysPrompt').value.trim() || DEFAULT_SYS);
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
