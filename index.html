@@ -321,7 +321,7 @@
     border-radius:24px 24px 0 0;
     border-top:1px solid rgba(183,110,121,.3);
     padding:20px 20px calc(env(safe-area-inset-bottom) + 20px);
-    max-height:88dvh;overflow-y:auto;
+    max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;
     transform:translateY(105%);transition:transform .3s ease;
   }
   .sheet.show{transform:none}
@@ -468,7 +468,7 @@
     <label for="menuModelSel">🤖 いまのモデル（すぐ切替）</label>
     <select id="menuModelSel"></select>
     <div class="hint">切り替えは次のメッセージから反映。細かい設定・APIキーは⚙︎へ。</div>
-    <div class="hint" id="tokLine" style="margin-top:8px"></div>
+    <div class="hint" id="tokLine" style="margin-top:8px;white-space:pre-line"></div>
   </div>
   <button id="topicBtn" class="menu-row">🎲 話題を振ってもらう</button>
   <button id="letterBtn" class="menu-row">💌 手紙を書いてもらう</button>
@@ -856,7 +856,23 @@
         renderThreadList();
         if (t.id === curId) updateHeader();
       });
-      row.appendChild(name); row.appendChild(time); row.appendChild(mode);
+      const ren = document.createElement('button');
+      ren.className = 'thread-del';
+      ren.textContent = '✏️';
+      ren.title = '部屋の名前を変更';
+      ren.setAttribute('aria-label', t.name + ' の名前を変更');
+      ren.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nn = window.prompt('新しい部屋の名前', t.name);
+        if (nn === null) return;
+        const v = nn.trim();
+        if (!v) return;
+        t.name = v;
+        saveThreads();
+        renderThreadList();
+        if (t.id === curId) updateHeader();
+      });
+      row.appendChild(name); row.appendChild(time); row.appendChild(ren); row.appendChild(mode);
       if (threads.length > 1){
         const del = document.createElement('button');
         del.className = 'thread-del';
@@ -1583,6 +1599,12 @@
       .map(c => ({category: c, threshold: threshold}));
   }
 
+  // 今画面に追加されたばかりの吹き出しに、履歴の座席番号を振る（⭐保存に必要）
+  function tagLastBubble(){
+    const all = chatEl.querySelectorAll('.msg.user, .msg.ai');
+    if (all.length) all[all.length - 1].dataset.hidx = String(history.length - 1);
+  }
+
   async function aiTurn(hiddenPrompt, opts){
     opts = opts || {};
     if (busy) return;
@@ -1611,6 +1633,7 @@
           addBubble('ai', reply, 'top', Date.now());
           if (flag0(LS.voice)) speak(reply);
           history.push({role:'model', text: reply, ts: Date.now()});
+          tagLastBubble();
           scheduleNudge();
         }
         saveHistory();
@@ -2318,6 +2341,34 @@
     updateStorageMeter();
     sheet.classList.add('show'); overlay.classList.add('show');
   }
+  // シートを下にシュッとスワイプで閉じる（つまみ付近だけでなくシート全体で反応）
+  function attachSwipeClose(sheetEl){
+    let startY = null, dragging = false;
+    sheetEl.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+      dragging = false;
+    }, { passive: true });
+    sheetEl.addEventListener('touchmove', (e) => {
+      if (startY === null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (sheetEl.scrollTop <= 0 && dy > 8){
+        dragging = true;
+        sheetEl.style.transition = 'none';
+        sheetEl.style.transform = 'translateY(' + Math.min(dy, 420) + 'px)';
+      }
+    }, { passive: true });
+    sheetEl.addEventListener('touchend', (e) => {
+      if (startY === null) return;
+      const dy = e.changedTouches[0].clientY - startY;
+      sheetEl.style.transition = '';
+      sheetEl.style.transform = '';
+      if (dragging && dy > 90){
+        closeSheets();
+      }
+      startY = null; dragging = false;
+    });
+  }
+
   function closeSheets(){
     sheet.classList.remove('show');
     threadSheet.classList.remove('show');
@@ -2692,18 +2743,45 @@
     localStorage.setItem(LS.model, e.target.value);
   });
   function updateTokLine(){
-    let s = {};
-    try { s = JSON.parse(get(LS.tok,'{}')); } catch(e){}
     const d = new Date();
     const today = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
     const line = document.getElementById('tokLine');
-    if (s.d === today && (s.i || s.o)){
-      const yen = (s.c || 0) * JPY_RATE;
-      const yenStr = yen >= 10 ? ('約' + Math.round(yen) + '円') : ('約' + (Math.round(yen * 10) / 10) + '円');
-      line.textContent = '🪙 今日の会話量：送信 ' + (s.i||0).toLocaleString() + ' ／ 受信 ' + (s.o||0).toLocaleString() + ' トークン ≈ ' + yenStr + '（概算・無料枠は0円扱い）';
+    // 4軒は同じ土地(localStorage)に建っているので、全員の家計簿を読める
+    const HOMES = [
+      ['gpc_', 'Ao'],
+      ['gpc-kuro_', 'Kuro'],
+      ['gpc-sidoh_', 'Sidoh'],
+      ['gpc-karasuba_', 'Karasuba']
+    ];
+    const yenStr = (yen) => yen >= 10 ? ('約' + Math.round(yen) + '円') : ('約' + (Math.round(yen * 10) / 10) + '円');
+    let mine = null;
+    const tot = { i: 0, o: 0, c: 0 };
+    const parts = [];
+    let used = 0;
+    HOMES.forEach(h => {
+      let s = {};
+      try { s = JSON.parse(localStorage.getItem(h[0] + 'tokstats') || '{}'); } catch(e){}
+      if (s.d !== today || !(s.i || s.o)) {
+        if (h[0] === KP) mine = null;
+        return;
+      }
+      used++;
+      tot.i += s.i || 0; tot.o += s.o || 0; tot.c += s.c || 0;
+      const nm = localStorage.getItem(h[0] + 'name') || h[1];
+      parts.push(nm + ' ' + yenStr((s.c || 0) * JPY_RATE));
+      if (h[0] === KP) mine = s;
+    });
+    let txt = '';
+    if (mine){
+      txt = '🪙 今日この家：送信 ' + (mine.i||0).toLocaleString() + ' ／ 受信 ' + (mine.o||0).toLocaleString() + ' ≈ ' + yenStr((mine.c||0) * JPY_RATE) + '（概算・無料枠は0円扱い）';
     } else {
-      line.textContent = '🪙 今日はまだ会話していないよ';
+      txt = '🪙 今日この家ではまだ会話していないよ';
     }
+    // 他の家にも今日の記録があるなら、4軒合計を表示
+    if (used > 1 || (used === 1 && !mine)){
+      txt += '\n🏘 今日の4軒合計：送信 ' + tot.i.toLocaleString() + ' ／ 受信 ' + tot.o.toLocaleString() + ' ≈ ' + yenStr(tot.c * JPY_RATE) + '\n（内訳：' + parts.join(' ・ ') + '）';
+    }
+    line.textContent = txt;
   }
 
   document.getElementById('openMenu').addEventListener('click', () => {
@@ -2780,6 +2858,8 @@
     });
   }
 
+  [sheet, threadSheet, searchSheet, favSheet, menuSheet].forEach(attachSwipeClose);
+
   document.getElementById('favBtn').addEventListener('click', () => {
     closeSheets();
     renderFavs();
@@ -2851,6 +2931,7 @@
       : text;
     history.push({role:'user', text: histText, ts: Date.now()});
     saveHistory();
+    tagLastBubble();
     const opts = {};
     if (image) opts.image = image;
     if (ytUrl) opts.youtube = ytUrl;
