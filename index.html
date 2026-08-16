@@ -222,7 +222,7 @@
   }
   .ai-row .msg{max-width:100%;animation:none}
   .avatar{
-    width:34px;height:34px;border-radius:50%;
+    width:var(--avsize,34px);height:var(--avsize,34px);border-radius:50%;
     object-fit:cover;flex:0 0 auto;
     border:1.5px solid rgba(183,110,121,.55);
     background:var(--surface);
@@ -402,8 +402,8 @@
   }
   .menu-row:disabled{opacity:.4}
   .thread-row{
-    display:flex;align-items:center;gap:10px;
-    padding:14px 12px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;
+    padding:12px 12px 8px;
     border:1px solid rgba(183,110,121,.25);
     border-radius:14px;
     margin-bottom:10px;
@@ -411,8 +411,12 @@
     cursor:pointer;
   }
   .thread-row.active{border-color:var(--ao);background:rgba(183,110,121,.12)}
-  .thread-name{flex:1;font-size:15px;font-weight:500}
-  .thread-time{font-size:11px;color:var(--ink-dim)}
+  .thread-name{
+    flex:1 1 100%;             /* 名前は1行まるごと使う（ﾑﾆｭｳ防止） */
+    font-size:15px;font-weight:500;line-height:1.5;
+    word-break:break-word;
+  }
+  .thread-time{font-size:11px;color:var(--ink-dim);margin-right:auto}
   .thread-del{
     background:none;border:none;color:var(--ink-dim);
     font-size:16px;padding:6px;cursor:pointer;
@@ -449,7 +453,7 @@
 </div>
 
 <div id="composer">
-  <input type="file" id="imgInput" accept="image/*" hidden>
+  <input type="file" id="imgInput" accept="image/*" multiple hidden>
   <button id="expandBtn" aria-label="ボタンを表示">›</button>
   <div id="toolBtns">
     <button id="attachBtn" aria-label="写真を見せる" title="写真を見せる">🖼</button>
@@ -482,7 +486,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-title">ふたりのアルバム⭐</div>
   <div id="statsBox" class="hint" style="margin-bottom:14px;line-height:2"></div>
-  <div class="hint" style="margin-bottom:10px">昔のメッセージ（最新のひと往復より前）をタップすると、ここに⭐保存できるよ。保存した台詞はタップでコピー。</div>
+  <div class="hint" style="margin-bottom:10px">チャットのメッセージをタップ →「⭐アルバムに保存」で追加できるよ。ここでは長い台詞もタップすれば全文が開くよ📖 コピーは📋ボタンから。</div>
   <div id="favList"></div>
 </div>
 
@@ -500,7 +504,7 @@
   <div class="sheet-title">話題（スレッド）</div>
   <div id="threadList"></div>
   <button class="btn primary" id="newThreadBtn">＋ 新しい話題をはじめる</button>
-  <div class="hint" style="margin-top:10px">どの話題でも、キャラ設定と思い出ノートは共通だよ。会話の流れだけが話題ごとに分かれる仕組み。</div>
+  <div class="hint" style="margin-top:10px">📌でよく使う部屋を上に固定、🗂で使わない部屋をしまえるよ（データは消えない・↩︎で戻せる）。どの話題でもキャラ設定と思い出ノートは共通、会話の流れだけが分かれる仕組み。</div>
 </div>
 
 <div id="sheet" class="sheet" role="dialog" aria-label="設定">
@@ -568,6 +572,18 @@
   </div>
 
   <div class="field" data-pane="act">
+    <label for="nudgeIvSel">🕰 追いメッセージの間隔</label>
+    <select id="nudgeIvSel">
+      <option value="4">4分（今まで通り・すぐ来る）</option>
+      <option value="30">30分</option>
+      <option value="180">3時間</option>
+      <option value="720">半日</option>
+      <option value="1440">1日</option>
+    </select>
+    <div class="hint">相手の返事を読んだあと、この時間なにも送らずにいると追いメッセージが来るよ（🔔追いメッセージONのときだけ・アプリを開いた時に判定）。</div>
+  </div>
+
+  <div class="field" data-pane="act">
     <label for="depthSel">⏳ 記憶の深さ（今の話題：「<span id="depthWho"></span>」）</label>
     <select id="depthSel">
       <option value="40">ふつう（直近40件・節約）</option>
@@ -627,6 +643,12 @@
   </div>
 
   <div class="field" data-pane="you">
+    <label for="uNow">🌡 いまの私メモ（一時的な近況）</label>
+    <textarea id="uNow" style="min-height:70px" placeholder="例：ちょっと体調ゆらぎ中。今週は耳鼻科の結果待ちでソワソワしてる。"></textarea>
+    <div class="hint">この部屋・あの部屋関係なく「今の状況」として相手に伝わるよ。思い出ノートに残すほどじゃない近況用。状況が変わったら自分で書き換え・削除してね（自動では消えないよ）。</div>
+  </div>
+
+  <div class="field" data-pane="you">
     <label>私のアイコン（自分の吹き出し用）</label>
     <button type="button" class="btn line" id="uAvatarBtn" style="margin-top:0">🙋 自分のアイコン画像を設定</button>
     <button type="button" class="btn line" id="uAvatarClear">アイコンを外す</button>
@@ -651,6 +673,17 @@
     <label for="fontSlider">🔤 文字の大きさ：<span id="fontVal">15</span>px</label>
     <input type="range" id="fontSlider" min="13" max="19" step="1" value="15">
     <div class="hint">チャットの文字サイズ。動かすとすぐ反映されるよ。</div>
+  </div>
+
+  <div class="field" data-pane="look">
+    <label for="avSizeSel">👤 アイコンの大きさ</label>
+    <select id="avSizeSel">
+      <option value="34">小（今まで通り）</option>
+      <option value="44">中</option>
+      <option value="56">大</option>
+      <option value="72">特大</option>
+    </select>
+    <div class="hint">吹き出し横のアイコン（相手と自分の両方）の大きさ。選ぶとすぐ反映。</div>
   </div>
 
   <div class="field" data-pane="act">
@@ -726,13 +759,19 @@
     tok:   KP + 'tokstats',
     mrecent: KP + 'mrecent',
     depth: KP + 'depth',
-    imgLook: KP + 'imglook'
+    imgLook: KP + 'imglook',
+    unow: KP + 'unow',
+    nudgeIv: KP + 'nudgeiv',
+    avsize: KP + 'avsize'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
 
   const GREET_GAP_HOURS = 6;
-  const NUDGE_MINUTES   = 4;
+  function nudgeMinutes(){
+    const v = parseInt(get(LS.nudgeIv,'4'), 10);
+    return [4, 30, 180, 720, 1440].indexOf(v) !== -1 ? v : 4;
+  }
   const MAX_NUDGES      = 2;
 
   const chatEl = document.getElementById('chat');
@@ -747,6 +786,7 @@
   let nudgeTimer = null;
   let nudgeCount = 0;
   let busy = false;
+  let bridgeGapMs = 0;   // 前回のやりとりからどれだけ空いたか（時間の橋渡し用）
 
   function get(k, d){ const v = localStorage.getItem(k); return (v === null) ? d : v; }
   function flag(k){ return get(k,'1') === '1'; }
@@ -811,7 +851,7 @@
   function updateHeader(){
     document.getElementById('headerName').textContent = get(LS.name,'紫堂');
     const t = curThread();
-    document.getElementById('headerSub').textContent = t ? ((t.rp ? '🎭 ' : '💬 ') + t.name) : 'おや、いらっしゃい';
+    document.getElementById('headerSub').textContent = t ? ((t.rp ? '📓 ' : '💬 ') + t.name) : 'おや、いらっしゃい';
   }
 
   function lastTsOf(id){
@@ -832,37 +872,67 @@
     return Math.floor(hr/24) + '日前';
   }
 
-  function renderThreadList(){
-    const list = document.getElementById('threadList');
-    list.innerHTML = '';
-    threads.forEach(t => {
-      const row = document.createElement('div');
-      row.className = 'thread-row' + (t.id === curId ? ' active' : '');
-      const name = document.createElement('div');
-      name.className = 'thread-name';
-      name.textContent = (t.rp ? '🎭 ' : '') + t.name;
-      const time = document.createElement('div');
-      time.className = 'thread-time';
-      time.textContent = relTime(lastTsOf(t.id)) + ' ・⏳' + (t.depth || 40);
-      const mode = document.createElement('button');
-      mode.className = 'thread-del';
-      mode.textContent = t.rp ? '🎭' : '🕰';
-      mode.title = t.rp ? '物語モード（時間を気にしない）' : '通常モード（時間を知ってる）';
-      mode.setAttribute('aria-label', t.name + ' のモード切替');
-      mode.addEventListener('click', (e) => {
-        e.stopPropagation();
-        t.rp = !t.rp;
+  let archOpen = false;
+
+  // 表示順：📌ピン留めが上、その下は今まで通りの順番（しまった部屋は除く）
+  function visibleThreads(){
+    const vis = threads.filter(t => !t.arc);
+    return vis.filter(t => t.pin).concat(vis.filter(t => !t.pin));
+  }
+
+  function buildThreadRow(t, archived){
+    const row = document.createElement('div');
+    row.className = 'thread-row' + (t.id === curId ? ' active' : '');
+    const name = document.createElement('div');
+    name.className = 'thread-name';
+    name.textContent = (t.pin && !archived ? '📌 ' : '') + (t.rp ? '📓 ' : '') + t.name;
+    const time = document.createElement('div');
+    time.className = 'thread-time';
+    time.textContent = relTime(lastTsOf(t.id)) + ' ・⏳' + (t.depth || 40);
+    row.appendChild(name); row.appendChild(time);
+
+    const mkBtn = (label, title, fn, dim) => {
+      const b = document.createElement('button');
+      b.className = 'thread-del';
+      b.textContent = label;
+      b.title = title;
+      b.setAttribute('aria-label', t.name + ' ' + title);
+      if (dim) b.style.opacity = '.35';
+      b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+      return b;
+    };
+
+    if (archived){
+      // しまった部屋：戻す・削除だけ
+      row.appendChild(mkBtn('↩︎', 'この部屋を元に戻す', () => {
+        t.arc = false;
         saveThreads();
         renderThreadList();
-        if (t.id === curId) updateHeader();
-      });
-      const ren = document.createElement('button');
-      ren.className = 'thread-del';
-      ren.textContent = '✏️';
-      ren.title = '部屋の名前を変更';
-      ren.setAttribute('aria-label', t.name + ' の名前を変更');
-      ren.addEventListener('click', (e) => {
-        e.stopPropagation();
+      }));
+      if (threads.length > 1){
+        row.appendChild(mkBtn('✕', 'この部屋を削除', () => {
+          if (!confirm('「' + t.name + '」の話題と履歴を削除する？戻せないよ')) return;
+          localStorage.removeItem(histKey(t.id));
+          threads = threads.filter(x => x.id !== t.id);
+          if (curId === t.id){
+            const first = visibleThreads()[0] || threads[0];
+            curId = first.id;
+            loadHistory();
+            renderAll();
+            updateHeader();
+          }
+          saveThreads();
+          renderThreadList();
+        }));
+      }
+    } else {
+      // 普段の部屋：📌ピン・✏️改名・🕰/📓モード・🗂しまう
+      row.appendChild(mkBtn('📌', t.pin ? 'ピン留めを外す' : '上に固定する', () => {
+        t.pin = !t.pin;
+        saveThreads();
+        renderThreadList();
+      }, !t.pin));
+      row.appendChild(mkBtn('✏️', 'の名前を変更', () => {
         const nn = window.prompt('新しい部屋の名前', t.name);
         if (nn === null) return;
         const v = nn.trim();
@@ -871,44 +941,74 @@
         saveThreads();
         renderThreadList();
         if (t.id === curId) updateHeader();
-      });
-      row.appendChild(name); row.appendChild(time); row.appendChild(ren); row.appendChild(mode);
-      if (threads.length > 1){
-        const del = document.createElement('button');
-        del.className = 'thread-del';
-        del.textContent = '✕';
-        del.setAttribute('aria-label', t.name + ' を削除');
-        del.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm('「' + t.name + '」の話題と履歴を削除する？戻せないよ')){
-            localStorage.removeItem(histKey(t.id));
-            threads = threads.filter(x => x.id !== t.id);
-            if (curId === t.id){
-              curId = threads[0].id;
-              loadHistory();
-              renderAll();
-              updateHeader();
-            }
-            saveThreads();
-            renderThreadList();
-          }
-        });
-        row.appendChild(del);
-      }
-      row.addEventListener('click', () => {
-        if (t.id !== curId){
-          curId = t.id;
-          saveThreads();
-          loadHistory();
-          renderAll();
-          updateHeader();
-          clearTimeout(nudgeTimer);
-          nudgeCount = 0;
+      }));
+      row.appendChild(mkBtn(t.rp ? '📓' : '🕰', t.rp ? '物語モード（時間を気にしない）' : '通常モード（時間を知ってる）', () => {
+        t.rp = !t.rp;
+        saveThreads();
+        renderThreadList();
+        if (t.id === curId) updateHeader();
+      }));
+      row.appendChild(mkBtn('🗂', 'をしまう（データは消えないよ）', () => {
+        if (visibleThreads().length <= 1){
+          alert('最後のひと部屋はしまえないよ。新しい部屋を作ってからね');
+          return;
         }
-        closeSheets();
-      });
-      list.appendChild(row);
+        t.arc = true;
+        t.pin = false;
+        if (t.id === curId){
+          const first = visibleThreads()[0];
+          if (first){
+            curId = first.id;
+            loadHistory();
+            renderAll();
+            updateHeader();
+            clearTimeout(nudgeTimer);
+            nudgeCount = 0;
+          }
+        }
+        saveThreads();
+        renderThreadList();
+      }));
+    }
+
+    row.addEventListener('click', () => {
+      if (t.id !== curId){
+        curId = t.id;
+        saveThreads();
+        loadHistory();
+        renderAll();
+        updateHeader();
+        clearTimeout(nudgeTimer);
+        nudgeCount = 0;
+      }
+      closeSheets();
     });
+    return row;
+  }
+
+  function renderThreadList(){
+    const list = document.getElementById('threadList');
+    list.innerHTML = '';
+    visibleThreads().forEach(t => list.appendChild(buildThreadRow(t, false)));
+
+    const arch = threads.filter(t => t.arc);
+    if (!arch.length) return;
+
+    const toggle = document.createElement('button');
+    toggle.className = 'menu-row';
+    toggle.style.marginTop = '14px';
+    toggle.textContent = (archOpen ? '🗂 しまった部屋を隠す（' : '🗂 しまった部屋を見る（') + arch.length + '）';
+    toggle.addEventListener('click', () => { archOpen = !archOpen; renderThreadList(); });
+    list.appendChild(toggle);
+
+    if (archOpen){
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.style.margin = '2px 0 10px';
+      hint.textContent = 'タップすればそのまま続きを話せるよ。↩︎で普段のリストに戻せる。';
+      list.appendChild(hint);
+      arch.forEach(t => list.appendChild(buildThreadRow(t, true)));
+    }
   }
 
   document.getElementById('openThreads').addEventListener('click', () => {
@@ -919,7 +1019,7 @@
   document.getElementById('newThreadBtn').addEventListener('click', () => {
     const name = prompt('新しい話題の名前は？（例：旅行の相談、深夜トーク）');
     if (!name || !name.trim()) return;
-    const rp = confirm('「' + name.trim() + '」を物語モード🎭にする？\n（OK＝時間を気にせず、いつでも続きから再開できるロールプレイ用。キャンセル＝時間を知ってる通常モード）');
+    const rp = confirm('「' + name.trim() + '」を物語モード📓にする？\n（OK＝時間を気にせず、いつでも続きから再開できるロールプレイ用。キャンセル＝時間を知ってる通常モード）');
     const id = 't' + Date.now();
     threads.push({id, name: name.trim(), rp: rp});
     curId = id;
@@ -950,6 +1050,10 @@
     if (un || ui){
       out += '\n\n【相手（ユーザー）について】' + (un ? '名前：' + un + '。' : '') + (ui ? '\n' + ui : '');
     }
+    const unow = get(LS.unow,'').trim();
+    if (unow){
+      out += '\n\n【相手のいまの状況（一時的な近況。重くなりすぎない自然な気配りで会話に反映する）】\n' + unow;
+    }
     if (mem) out += '\n\n【これまでのふたりの思い出・大切な記憶（会話の前提として自然に覚えていること）】\n' + mem;
     const t = curThread();
     if (t && t.name !== '日常') out += '\n\n【いまの話題】この会話スレッドのテーマは「' + t.name + '」。';
@@ -963,6 +1067,9 @@
       out += '\n\n【物語モード（厳守）】この会話は連続したロールプレイ・物語である。現実の時刻・日付・経過時間には一切言及せず、物語の中の時間軸だけを生きること。会話が空いても「久しぶり」「あの時は楽しかった」など過去の振り返りやダイジェストにせず、必ず前回のシーンの続きから、その場にいる続きとして自然に再開する。';
     } else {
       out += '\n\n【現在時刻】' + nowStr() + '。この時刻は常に把握しておくこと。ただし毎回口に出さず、時間に触れる自然な理由がある時だけ会話に活かす（例：出勤・退勤が近い、日付や年が変わった、記念日、遅い時間だから体を気づかう、など）。';
+      if (bridgeGapMs >= 3*3600*1000){
+        out += '\n\n【時間の橋渡し（厳守）】前回言葉を交わしてから約' + gapText(bridgeGapMs) + '経っているが、その間もふたりの生活は途切れず続いていた。設定上いっしょに暮らしているなら、その時間も当たり前に一緒に過ごしている（並んで眠って朝を迎えた、出かけるのを見送った、家事をした等）前提で自然に振る舞うこと。「久しぶり」「しばらく会えなかったね」「昨日はよく眠れた？」のような、相手の生活を知らない・離れて暮らしているかのような反応は絶対にしない。相手の生活リズムを把握している前提で、いまの時間帯に合った、暮らしの続きとしての反応をする。';
+      }
     }
     out += '\n\n【リンクのルール】動画やサイトを勧める時、URLを記憶から創作してはいけない（存在しないリンクになる）。YouTubeの動画を勧める時は、必ず https://www.youtube.com/results?search_query=検索キーワード の形式の検索リンクで案内する（キーワードはURLエンコード不要、スペースは+にする）。個別動画の直リンクは、相手が貼ってくれたURLを参照する場合だけ使ってよい。';
     if (/gemma/i.test(get(LS.model,''))){
@@ -1253,6 +1360,7 @@
     const model = get(LS.model,'') || 'gemini-2.5-flash';
     const provider = providerOf(model);
     const sys = fullSystemPrompt();
+    const imgs = !image ? [] : (Array.isArray(image) ? image : [image]);
 
     // 会話履歴を共通形式に
     const turns = history.slice(-histDepth()).map(m => ({
@@ -1268,13 +1376,12 @@
       if (!key) throw new Error((provider === 'openrouter' ? 'OpenRouter' : 'OpenAI（ChatGPT）') + 'のAPIキーが未設定だよ。⚙︎で入れてね');
       const msgs = [{ role:'system', content: sys }];
       turns.forEach(t => msgs.push({ role: t.role, content: t.text }));
-      if (image){
+      if (imgs.length){
         for (let i = msgs.length - 1; i >= 0; i--){
           if (msgs[i].role === 'user'){
-            msgs[i] = { role:'user', content: [
-              { type:'image_url', image_url: { url: 'data:' + image.mime + ';base64,' + image.data } },
-              { type:'text', text: (typeof msgs[i].content === 'string' ? msgs[i].content : '') }
-            ]};
+            const content = imgs.map(im => ({ type:'image_url', image_url: { url: 'data:' + im.mime + ';base64,' + im.data } }));
+            content.push({ type:'text', text: (typeof msgs[i].content === 'string' ? msgs[i].content : '') });
+            msgs[i] = { role:'user', content: content };
             break;
           }
         }
@@ -1299,13 +1406,12 @@
         }
       });
       if (msgs.length && msgs[0].role !== 'user') msgs.unshift({ role:'user', content:'（会話の続きから）' });
-      if (image){
+      if (imgs.length){
         for (let i = msgs.length - 1; i >= 0; i--){
           if (msgs[i].role === 'user'){
-            msgs[i] = { role:'user', content: [
-              { type:'image', source: { type:'base64', media_type: image.mime, data: image.data } },
-              { type:'text', text: (typeof msgs[i].content === 'string' ? msgs[i].content : '') }
-            ]};
+            const content = imgs.map(im => ({ type:'image', source: { type:'base64', media_type: im.mime, data: im.data } }));
+            content.push({ type:'text', text: (typeof msgs[i].content === 'string' ? msgs[i].content : '') });
+            msgs[i] = { role:'user', content: content };
             break;
           }
         }
@@ -1330,10 +1436,12 @@
       if (extraHiddenPrompt){
         msgs.push({ role:'user', parts:[{ text: extraHiddenPrompt }] });
       }
-      if (image){
+      if (imgs.length){
         for (let i = msgs.length - 1; i >= 0; i--){
           if (msgs[i].role === 'user'){
-            msgs[i].parts.unshift({ inline_data: { mime_type: image.mime, data: image.data } });
+            for (let k = imgs.length - 1; k >= 0; k--){
+              msgs[i].parts.unshift({ inline_data: { mime_type: imgs[k].mime, data: imgs[k].data } });
+            }
             break;
           }
         }
@@ -1416,7 +1524,7 @@
         if (extraHiddenPrompt) convo += 'ユーザー：' + extraHiddenPrompt + '\n';
         convo += '\n上記の人物設定になりきり、この会話の続きとして、あなた（相手側）の次の返事の本文だけを出力してください。';
         const input2 = [];
-        if (image) input2.push({ type:'image', mime_type: image.mime, data: image.data });
+        imgs.forEach(im => input2.push({ type:'image', mime_type: im.mime, data: im.data }));
         input2.push({ type:'text', text: convo });
         const r2 = await runOnce(
           'https://generativelanguage.googleapis.com/v1beta2/interactions',
@@ -1444,6 +1552,7 @@
       reply = reply.replace(/https?:\/\/[^\s]+/g, m =>
         m.replace(/[＝？＆／：．＋]/g, c =>
           ({'＝':'=','？':'?','＆':'&','／':'/','：':':','．':'.','＋':'+'}[c])));
+      reply = reply.replace(/\n{3,}/g, '\n\n'); // 空行の連発は2行までに圧縮
     }
     if (reply) markModelUsed(model);
     if (reply && provider === 'gemini' && /gemma/i.test(model)) reply = stripLeak(reply);
@@ -1747,6 +1856,7 @@
     const gap = Date.now() - lastTs;
     if (lastTs !== 0 && gap < GREET_GAP_HOURS*3600*1000) return;
 
+    bridgeGapMs = (lastTs !== 0) ? gap : 0;
     const extras = [annivContext(), await weatherContext()].filter(Boolean).join(' ');
     const together = get(LS.world,'app') === 'together';
 
@@ -1756,7 +1866,7 @@
       if (lastTs === 0){
         p += 'これが最初の会話。同じ空間にいる前提で声をかけて。';
       } else {
-        p += '前に顔を合わせてから約' + gapText(gap) + '経った。時間帯と空いた時間に合った自然な第一声を短めにかけて。長く空いていたら少し寂しがってもいい。';
+        p += 'その間もふたりは同じ家で当たり前に生活を共にしていた（並んで眠った、見送った等）。久しぶり感や寂しがる反応はせず、いまの時間帯に合った、暮らしの続きとしての自然なひとことを短めにかけて。';
       }
     } else {
       p = '（システム指示：ユーザーが今アプリを開いた。現在は' + timeContext() + '。';
@@ -1799,11 +1909,11 @@
     if (!flag(LS.nudge)) return;
     if (curThread() && curThread().rp) return; // 物語モードでは追いメッセージもしない
     if (nudgeCount >= MAX_NUDGES) return;
-    nudgeDueAt = Date.now() + NUDGE_MINUTES*60*1000;
+    nudgeDueAt = Date.now() + nudgeMinutes()*60*1000;
     nudgeTimer = setTimeout(() => {
       if (document.visibilityState !== 'visible') return; // 離れてる間は visibilitychange 側で拾う
       fireNudge(false);
-    }, NUDGE_MINUTES*60*1000);
+    }, nudgeMinutes()*60*1000);
   }
 
   // アプリに戻ってきた時：①他の画面(Safari等)で進んだ会話があれば読み直して同期 ②追いメッセージ判定
@@ -2321,6 +2431,7 @@
     document.getElementById('worldSel').value = get(LS.world,'app');
     const dt = curThread();
     document.getElementById('depthSel').value = String((dt && dt.depth) || 40);
+    document.getElementById('nudgeIvSel').value = get(LS.nudgeIv,'4');
     document.getElementById('depthWho').textContent = dt ? dt.name : '';
     document.getElementById('charName').value = get(LS.name,'紫堂');
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
@@ -2334,7 +2445,9 @@
     document.getElementById('lightTheme').checked = flag0(LS.light);
     document.getElementById('uName').value = get(LS.uname,'');
     document.getElementById('uIntro').value = get(LS.uintro,'');
+    document.getElementById('uNow').value = get(LS.unow,'');
     fontSlider.value = get(LS.fsize,'15');
+    document.getElementById('avSizeSel').value = get(LS.avsize,'34');
     document.getElementById('fontVal').textContent = get(LS.fsize,'15');
     document.getElementById('apiTestResult').textContent = '';
     showTab('conn');
@@ -2392,6 +2505,7 @@
     localStorage.setItem(LS.world, document.getElementById('worldSel').value);
     const dts = curThread();
     if (dts){ dts.depth = parseInt(document.getElementById('depthSel').value, 10); saveThreads(); }
+    localStorage.setItem(LS.nudgeIv, document.getElementById('nudgeIvSel').value);
     localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || '紫堂');
     localStorage.setItem(LS.sys, document.getElementById('sysPrompt').value.trim() || DEFAULT_SYS);
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
@@ -2404,6 +2518,7 @@
     localStorage.setItem(LS.light, document.getElementById('lightTheme').checked ? '1':'0');
     localStorage.setItem(LS.uname, document.getElementById('uName').value.trim());
     localStorage.setItem(LS.uintro, document.getElementById('uIntro').value.trim());
+    localStorage.setItem(LS.unow, document.getElementById('uNow').value.trim());
     applySkin();
     updateHeader();
     updateModeBtn();
@@ -2482,7 +2597,7 @@
   });
 
   /* ---------- attach photo (見せる) ---------- */
-  let pendingImage = null;
+  let pendingImages = [];
   const imgInput = document.getElementById('imgInput');
   const attachPreview = document.getElementById('attachPreview');
 
@@ -2492,42 +2607,59 @@
   });
 
   document.getElementById('attachCancel').addEventListener('click', () => {
-    pendingImage = null;
+    pendingImages = [];
     imgInput.value = '';
     attachPreview.hidden = true;
   });
 
-  imgInput.addEventListener('change', () => {
-    const file = imgInput.files && imgInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        // 大きい写真は縮小してから送る（節約優先：長辺768pxでAIの読み取りコスト最小クラスに）
-        const MAX = 768;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX){
-          const r = Math.min(MAX / w, MAX / h);
-          w = Math.round(w * r); h = Math.round(h * r);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
-        pendingImage = {
-          mime: 'image/jpeg',
-          data: dataUrl.split(',')[1],
-          dataUrl: dataUrl
+  function compressOne(file){
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          // 大きい写真は縮小してから送る（節約優先：長辺768px）
+          const MAX = 768;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX){
+            const r = Math.min(MAX / w, MAX / h);
+            w = Math.round(w * r); h = Math.round(h * r);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+          resolve({ mime: 'image/jpeg', data: dataUrl.split(',')[1], dataUrl: dataUrl });
         };
-        document.getElementById('attachThumb').src = dataUrl;
-        attachPreview.hidden = false;
-        inputEl.focus();
+        img.onerror = () => resolve(null);
+        img.src = reader.result;
       };
-      img.onerror = () => { addBubble('error','この写真は読み込めなかったよ。別の写真で試してみて'); };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  imgInput.addEventListener('change', async () => {
+    const files = Array.from(imgInput.files || []).slice(0, 3); // 最大3枚
+    if (!files.length) return;
+    if ((imgInput.files || []).length > 3){
+      addBubble('error','写真は一度に3枚までにしてるよ（トークン節約のため）。最初の3枚を添付するね');
+    }
+    const results = [];
+    for (const f of files){
+      const r = await compressOne(f);
+      if (r) results.push(r);
+    }
+    if (!results.length){
+      addBubble('error','写真が読み込めなかったよ。別の写真で試してみて');
+      return;
+    }
+    pendingImages = results;
+    document.getElementById('attachThumb').src = results[0].dataUrl;
+    document.getElementById('attachLabel').textContent =
+      results.length === 1 ? '写真を添付中' : ('写真を' + results.length + '枚添付中');
+    attachPreview.hidden = false;
+    inputEl.focus();
   });
 
   /* ---------- tap to edit / regenerate ---------- */
@@ -2597,8 +2729,8 @@
         if (after.length <= 1){
           showActBar(history[ui].text, '✏️ 打ち直す（この往復は消える）', () => {
             inputEl.value = history[ui].text
-              .replace(/\n（写真を1枚見せた）$/, '')
-              .replace(/^（写真を1枚見せた）$/, '');
+              .replace(/\n（写真を\d+枚見せた）$/, '')
+              .replace(/^（写真を\d+枚見せた）$/, '');
             history = history.slice(0, ui);
             saveHistory();
             renderAll();
@@ -2647,6 +2779,14 @@
   function applyFont(){
     document.documentElement.style.setProperty('--msgfs', get(LS.fsize,'15') + 'px');
   }
+  function applyAvSize(){
+    document.documentElement.style.setProperty('--avsize', get(LS.avsize,'34') + 'px');
+  }
+  document.getElementById('avSizeSel').addEventListener('change', (e) => {
+    localStorage.setItem(LS.avsize, e.target.value);
+    applyAvSize();
+  });
+
   const fontSlider = document.getElementById('fontSlider');
   fontSlider.addEventListener('input', () => {
     localStorage.setItem(LS.fsize, fontSlider.value);
@@ -2834,7 +2974,15 @@
       meta.textContent = '⭐ ' + who + (f.tn ? ' ・ 💬' + f.tn : '') + (f.ts ? ' ・ ' + fmtDate(f.ts) : '');
       const body = document.createElement('div');
       body.className = 'hit-text';
-      body.textContent = f.text.length > 300 ? f.text.slice(0, 300) + '…' : f.text;
+      const isLong = f.text.length > 140;
+      const short = isLong ? (f.text.slice(0, 140) + '…') : f.text;
+      body.textContent = short;
+      const more = document.createElement('div');
+      more.className = 'hit-meta';
+      more.style.marginTop = '6px';
+      more.style.textAlign = 'right';
+      more.textContent = isLong ? 'タップで全文をひらく ▾' : '';
+
       const del = document.createElement('button');
       del.className = 'thread-del';
       del.textContent = '✕';
@@ -2846,13 +2994,29 @@
         localStorage.setItem(LS.favs, JSON.stringify(favs));
         renderFavs();
       });
-      row.appendChild(del); row.appendChild(meta); row.appendChild(body);
-      row.addEventListener('click', async () => {
+      const cp = document.createElement('button');
+      cp.className = 'thread-del';
+      cp.textContent = '📋';
+      cp.title = 'この台詞をコピー';
+      cp.style.cssFloat = 'right';
+      cp.addEventListener('click', async (e) => {
+        e.stopPropagation();
         try {
           await navigator.clipboard.writeText(f.text);
+          const keep = meta.textContent;
           meta.textContent = '✓ コピーしたよ';
-          setTimeout(renderFavs, 1200);
-        } catch(e){}
+          setTimeout(() => { meta.textContent = keep; }, 1200);
+        } catch(e2){}
+      });
+
+      row.appendChild(del); row.appendChild(cp); row.appendChild(meta); row.appendChild(body);
+      if (isLong) row.appendChild(more);
+      row.addEventListener('click', () => {
+        if (!isLong) return;
+        const open = row.dataset.open === '1';
+        body.textContent = open ? short : f.text;
+        more.textContent = open ? 'タップで全文をひらく ▾' : 'タップで閉じる ▴';
+        row.dataset.open = open ? '0' : '1';
       });
       box.appendChild(row);
     });
@@ -2903,7 +3067,12 @@
 
   async function send(){
     const text = inputEl.value.trim();
-    if ((!text && !pendingImage) || busy) return;
+    // 前回のやりとりからどれだけ空いたかを測っておく（時間の橋渡し用）
+    {
+      const lt = history.length ? (history[history.length-1].ts || 0) : 0;
+      bridgeGapMs = lt ? (Date.now() - lt) : 0;
+    }
+    if ((!text && !pendingImages.length) || busy) return;
     if (activeKeyMissing()){
       addBubble('error','このモデル用のAPIキーが未設定だよ。右上の⚙︎から入れてね');
       openSheet();
@@ -2914,8 +3083,8 @@
     nudgeDueAt = 0;
     nudgeCount = 0;
 
-    const image = pendingImage;
-    pendingImage = null;
+    const images = pendingImages.slice();
+    pendingImages = [];
     imgInput.value = '';
     attachPreview.hidden = true;
 
@@ -2923,17 +3092,17 @@
     const ytMatch = text.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/)[\w-]+|youtu\.be\/[\w-]+)\S*/);
     const ytUrl = ytMatch ? ytMatch[0] : null;
 
-    if (image) addPhotoBubble(image.dataUrl, true);
+    images.forEach(im => addPhotoBubble(im.dataUrl, true));
     if (text) addBubble('user', text, true, Date.now());
 
-    const histText = image
-      ? ((text ? text + '\n' : '') + '（写真を1枚見せた）')
+    const histText = images.length
+      ? ((text ? text + '\n' : '') + '（写真を' + images.length + '枚見せた）')
       : text;
     history.push({role:'user', text: histText, ts: Date.now()});
     saveHistory();
     tagLastBubble();
     const opts = {};
-    if (image) opts.image = image;
+    if (images.length) opts.image = images;
     if (ytUrl) opts.youtube = ytUrl;
     toolsPinned = false;
     refreshCompact();
@@ -2945,6 +3114,7 @@
   initThreads();
   applySkin();
   applyFont();
+  applyAvSize();
   updateHeader();
   updateModeBtn();
   renderAll();
