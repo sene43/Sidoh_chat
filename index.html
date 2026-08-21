@@ -134,6 +134,13 @@
     background:rgba(183,110,121,.08);
     border:1px dashed rgba(183,110,121,.5);
   }
+  .msg.memo{
+    align-self:center;max-width:92%;
+    background:rgba(183,110,121,.09);
+    border:1px dashed rgba(183,110,121,.45);
+    font-size:13px;
+  }
+  .memo-label{font-size:11px;color:var(--ao);font-weight:700;margin-bottom:6px}
   .diary-label{
     font-size:11px;color:var(--ao);font-weight:700;margin-bottom:6px;
   }
@@ -504,7 +511,7 @@
   <div class="sheet-title">話題（スレッド）</div>
   <div id="threadList"></div>
   <button class="btn primary" id="newThreadBtn">＋ 新しい話題をはじめる</button>
-  <div class="hint" style="margin-top:10px">📌でよく使う部屋を上に固定、🗂で使わない部屋をしまえるよ（データは消えない・↩︎で戻せる）。どの話題でもキャラ設定と思い出ノートは共通、会話の流れだけが分かれる仕組み。</div>
+  <div class="hint" style="margin-top:10px">📌上に固定 ／ ✏️名前を変更 ／ 🔗記憶を共有（🔒はこの部屋だけ独立）／ 🕰📓時間モード ／ 🗂しまう（データは消えない・↩︎で戻せる）。どの部屋でもキャラ設定と思い出ノートは共通だよ。</div>
 </div>
 
 <div id="sheet" class="sheet" role="dialog" aria-label="設定">
@@ -569,6 +576,27 @@
       <option value="together">同じ家で一緒にいる（没入モード）</option>
     </select>
     <div class="hint">「一緒にいる」にすると、画面・スマホ・アプリの存在に触れず、同じ空間で直接会話してる前提になるよ🏠</div>
+  </div>
+
+  <div class="field" data-pane="act">
+    <label for="memAutoSel">🧠 思い出の自動メモ</label>
+    <select id="memAutoSel">
+      <option value="0">しない（今まで通り💭ボタンだけ）</option>
+      <option value="6">こまめ（6往復ごと）</option>
+      <option value="12">ふつう（12往復ごと）</option>
+      <option value="20">ひかえめ（20往復ごと）</option>
+    </select>
+    <div class="hint">会話を裏で読んで「覚えておく価値のあること」を思い出ノートに自動で書き足すよ。抽出は無料のGemmaがやるから0円（Geminiキーが必要）。書き留めたらチャットに小さく表示されて、違ったらその場で「↩︎取り消す」できる。🔒（独立）にした部屋では動かないよ。</div>
+  </div>
+
+  <div class="field" data-pane="act">
+    <label for="xroomSel">🕸 ほかの部屋の話も思い出す</label>
+    <select id="xroomSel">
+      <option value="0">しない（部屋ごとに独立）</option>
+      <option value="4">控えめ（関連が強い時だけ）</option>
+      <option value="2">しっかり（多少ゆるくても拾う）</option>
+    </select>
+    <div class="hint">送ったメッセージに関係する会話を、ほかの部屋からそっと探して最大3つだけ渡すよ。「部屋①で耳鼻科の話→部屋②でその続き」が通じるようになる。混ぜたくない部屋は💬リストの🔗を押して🔒（独立）にしてね。アプリ内で探すだけだからAPI代は増えないよ。</div>
   </div>
 
   <div class="field" data-pane="act">
@@ -762,7 +790,10 @@
     imgLook: KP + 'imglook',
     unow: KP + 'unow',
     nudgeIv: KP + 'nudgeiv',
-    avsize: KP + 'avsize'
+    avsize: KP + 'avsize',
+    memauto: KP + 'memauto',
+    memcnt: KP + 'memcnt',
+    xroom: KP + 'xroom'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -942,6 +973,11 @@
         renderThreadList();
         if (t.id === curId) updateHeader();
       }));
+      row.appendChild(mkBtn(t.solo ? '🔒' : '🔗', t.solo ? 'この部屋は独立（記憶を共有しない）' : 'この部屋の話もふたりの記憶として共有する', () => {
+        t.solo = !t.solo;
+        saveThreads();
+        renderThreadList();
+      }, !!t.solo));
       row.appendChild(mkBtn(t.rp ? '📓' : '🕰', t.rp ? '物語モード（時間を気にしない）' : '通常モード（時間を知ってる）', () => {
         t.rp = !t.rp;
         saveThreads();
@@ -1041,6 +1077,71 @@
            '(' + days[n.getDay()] + ') ' + n.getHours() + ':' + mm;
   }
 
+  // 直近の自分の発言（記憶の呼び水の検索語に使う）
+  function lastUserText(){
+    for (let i = history.length - 1; i >= 0; i--){
+      const m = history[i];
+      if (!m.hidden && m.role === 'user') return m.text || '';
+    }
+    return '';
+  }
+
+  // 思い出ノートが長くなったら、直近ぶん＋いまの話題に関係する行だけを渡す
+  function pickMemory(mem, query){
+    const lines = mem.split('\n').map(s => s.trim()).filter(Boolean);
+    if (lines.length <= 25 || mem.length <= 1200) return mem;  // 短いうちは全部渡す
+    const recent = lines.slice(-12);
+    const older = lines.slice(0, -12);
+    const q = (query || '').replace(/\s/g, '');
+    const grams = [];
+    for (let n = 2; n <= 3; n++){
+      for (let i = 0; i + n <= q.length; i++) grams.push(q.slice(i, i + n));
+    }
+    const scored = older.map(l => {
+      let s = 0;
+      grams.forEach(g => { if (l.indexOf(g) !== -1) s++; });
+      return { l: l, s: s };
+    }).filter(x => x.s >= 2);
+    scored.sort((a, b) => b.s - a.s);
+    const hits = scored.slice(0, 6).map(x => x.l);
+    return older.filter(l => hits.indexOf(l) !== -1).concat(recent).join('\n');
+  }
+
+  // 他の部屋の会話から、いまの話題に関係するやりとりを少しだけ拾う（控えめ）
+  function crossRoomContext(){
+    const th = parseInt(get(LS.xroom,'4'), 10);
+    if (!th) return '';
+    const cur = curThread();
+    if (cur && cur.solo) return '';         // 「この部屋は独立」に設定された部屋では呼び水を出さない
+    const q = (lastUserText() || '').replace(/\s/g, '');
+    if (q.length < 6) return '';
+    const grams = [];
+    for (let n = 2; n <= 3; n++){
+      for (let i = 0; i + n <= q.length; i++) grams.push(q.slice(i, i + n));
+    }
+    const hits = [];
+    threads.forEach(t => {
+      if (t.id === curId) return;           // 今の部屋は履歴で見えているので除外
+      if (t.solo) return;                   // 「独立」の部屋は他の部屋に持ち出さない
+      let h = [];
+      try { h = JSON.parse(localStorage.getItem(histKey(t.id)) || '[]'); } catch(e){ return; }
+      h.forEach(m => {
+        if (m.hidden || m.diary) return;
+        const tx = (m.text || '');
+        const flat = tx.replace(/\s/g, '');
+        if (flat.length < 8) return;
+        let s = 0;
+        grams.forEach(g => { if (flat.indexOf(g) !== -1) s++; });
+        if (s >= th) hits.push({ s: s, room: t.name, who: (m.role === 'model' ? get(LS.name,'紫堂') : (get(LS.uname,'') || '私')), text: tx, ts: m.ts || 0 });
+      });
+    });
+    if (!hits.length) return '';
+    hits.sort((a, b) => (b.s - a.s) || (b.ts - a.ts));
+    return hits.slice(0, 3).map(h =>
+      h.who + '：' + (h.text.length > 90 ? h.text.slice(0, 90) + '…' : h.text)
+    ).join('\n');
+  }
+
   function fullSystemPrompt(){
     const sys = get(LS.sys,'') || DEFAULT_SYS;
     const mem = get(LS.mem,'').trim();
@@ -1054,7 +1155,11 @@
     if (unow){
       out += '\n\n【相手のいまの状況（一時的な近況。重くなりすぎない自然な気配りで会話に反映する）】\n' + unow;
     }
-    if (mem) out += '\n\n【これまでのふたりの思い出・大切な記憶（会話の前提として自然に覚えていること）】\n' + mem;
+    if (mem) out += '\n\n【これまでのふたりの思い出・大切な記憶（会話の前提として自然に覚えていること）】\n' + pickMemory(mem, lastUserText());
+    const xr = crossRoomContext();
+    if (xr){
+      out += '\n\n【以前ふたりで交わした、いまの話に関係しそうなやりとり（あなたが当然覚えていること。参考にして自然に活かすだけでよく、わざわざ引用したり「前に話したよね」と確認したりしない）】\n' + xr;
+    }
     const t = curThread();
     if (t && t.name !== '日常') out += '\n\n【いまの話題】この会話スレッドのテーマは「' + t.name + '」。';
     if (get(LS.world,'app') === 'together'){
@@ -1744,6 +1849,7 @@
           history.push({role:'model', text: reply, ts: Date.now()});
           tagLastBubble();
           scheduleNudge();
+          if (!hiddenPrompt) autoMemoryTick();
         }
         saveHistory();
       }
@@ -1758,6 +1864,92 @@
     }
     busy = false;
     sendBtn.disabled = false; photoBtn.disabled = false; diaryBtn.disabled = false; memoryBtn.disabled = false; letterBtn.disabled = false; topicBtn.disabled = false;
+  }
+
+  /* ---------- auto memory ---------- */
+  function addMemoBubble(block){
+    const hint = chatEl.querySelector('.empty-hint');
+    if (hint) hint.remove();
+    const d = document.createElement('div');
+    d.className = 'msg memo';
+    const label = document.createElement('div');
+    label.className = 'memo-label';
+    label.textContent = '🧠 ' + get(LS.name,'紫堂') + 'が思い出ノートに書き留めたよ';
+    const body = document.createElement('div');
+    body.textContent = block;
+    const undo = document.createElement('button');
+    undo.className = 'copy-btn';
+    undo.textContent = '↩︎ これは取り消す';
+    undo.addEventListener('click', () => {
+      const cur = get(LS.mem,'');
+      const next = cur.replace('\n' + block, '').replace(block, '').trim();
+      localStorage.setItem(LS.mem, next);
+      d.remove();
+    });
+    d.appendChild(label); d.appendChild(body); d.appendChild(undo);
+    chatEl.appendChild(d);
+    scrollBottom();
+  }
+
+  async function autoMemoryExtract(){
+    const key = get(LS.key,'');
+    if (!key) return;                       // Geminiキーが無ければ静かに何もしない
+    const curT = curThread();
+    if (curT && curT.solo) return;          // 「独立」の部屋は思い出ノートに残さない
+    const mem = get(LS.mem,'').trim();
+    const cname = get(LS.name,'紫堂');
+    const uname = get(LS.uname,'') || '私';
+    const conv = history.filter(m => !m.hidden && !m.diary).slice(-14)
+      .map(m => (m.role === 'model' ? cname : uname) + '：' + m.text).join('\n');
+    if (conv.length < 60) return;
+    const d = new Date();
+    const dateStr = d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
+    const prompt = '次の会話から、長く覚えておく価値のある新しい事実・出来事・約束・好み・気持ちだけを抜き出して、「' + dateStr +
+      ' 内容」の形式で1行ずつ、最大3行で書いてください。\n【すでに記録済み（重複する内容は書かない）】\n' +
+      (mem || '（まだ何もない）') + '\n\n【最近の会話】\n' + conv +
+      '\n\n覚える価値のある新しいことが無ければ「なし」とだけ書いてください。前置き・説明・記号は書かないこと。';
+    let txt = '';
+    try {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent?key=' + encodeURIComponent(key), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: prompt }] }] })
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      try { txt = data.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){ return; }
+      try { if (data.usageMetadata) addTokens(data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount, 'gemma-4-31b-it'); } catch(e){}
+    } catch(e){ return; }
+    if (!txt) return;
+    // 日付部分を外して比べる（日付違いの同じ内容を二重に書かないため）
+    const stripDate = s => s.replace(/^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\s*/, '');
+    const norm = s => stripDate(s).replace(/[\s　・\-—*。、]/g, '');
+    const existLines = mem.split('\n').map(l => norm(l)).filter(l => l.length > 3);
+    const isDup = (n) => existLines.some(e =>
+      e.indexOf(n) !== -1 || (n.indexOf(e) !== -1 && n.length <= e.length * 1.5));
+    const lines = txt.split('\n')
+      .map(s => s.replace(/^[\s*・\-–—>]+/, '').trim())
+      .filter(s => s && !/^なし[。.]?$/.test(s) && /[ぁ-んァ-ヶ一-龯]/.test(s) && !/^[A-Za-z ,.'"]+$/.test(s))
+      .filter(s => { const n = norm(s); return n.length > 3 && !isDup(n); })
+      .slice(0, 3);
+    if (!lines.length) return;
+    const block = lines.join('\n');
+    const cur = get(LS.mem,'').trim();
+    try {
+      localStorage.setItem(LS.mem, (cur ? cur + '\n' : '') + block);
+    } catch(e){ return; }
+    addMemoBubble(block);
+  }
+
+  function autoMemoryTick(){
+    const iv = parseInt(get(LS.memauto,'12'), 10);
+    if (!iv) return;
+    let c = (parseInt(get(LS.memcnt,'0'), 10) || 0) + 1;
+    if (c >= iv){
+      localStorage.setItem(LS.memcnt, '0');
+      setTimeout(autoMemoryExtract, 800);
+    } else {
+      localStorage.setItem(LS.memcnt, String(c));
+    }
   }
 
   /* ---------- voice ---------- */
@@ -2432,6 +2624,8 @@
     const dt = curThread();
     document.getElementById('depthSel').value = String((dt && dt.depth) || 40);
     document.getElementById('nudgeIvSel').value = get(LS.nudgeIv,'4');
+    document.getElementById('memAutoSel').value = get(LS.memauto,'12');
+    document.getElementById('xroomSel').value = get(LS.xroom,'4');
     document.getElementById('depthWho').textContent = dt ? dt.name : '';
     document.getElementById('charName').value = get(LS.name,'紫堂');
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
@@ -2506,6 +2700,8 @@
     const dts = curThread();
     if (dts){ dts.depth = parseInt(document.getElementById('depthSel').value, 10); saveThreads(); }
     localStorage.setItem(LS.nudgeIv, document.getElementById('nudgeIvSel').value);
+    localStorage.setItem(LS.memauto, document.getElementById('memAutoSel').value);
+    localStorage.setItem(LS.xroom, document.getElementById('xroomSel').value);
     localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || '紫堂');
     localStorage.setItem(LS.sys, document.getElementById('sysPrompt').value.trim() || DEFAULT_SYS);
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
