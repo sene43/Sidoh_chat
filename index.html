@@ -586,7 +586,7 @@
     <button type="button" class="btn line" id="findImgBtn" style="margin-top:8px;padding:9px;font-size:13px">🔍 使える画像モデルを探す</button>
     <div class="hint" id="imgFindResult" style="margin-top:6px"></div>
     <label for="imgLook" style="margin-top:12px;display:block">📷用の見た目メモ（画像生成のとき最優先）</label>
-    <textarea id="imgLook" style="min-height:80px" placeholder="例：紫堂＝黒髪で犬っぽい雰囲気の日本人の青年。私＝眼鏡でオリーブ色の外ハネヘアの女性。絵柄はアニメイラスト風。"></textarea>
+    <textarea id="imgLook" style="min-height:110px" placeholder="例：紫堂＝黒髪で犬っぽい雰囲気の日本人の青年。私＝眼鏡でオリーブ色の外ハネヘアの女性。絵柄はアニメイラスト風。"></textarea>
     <div class="hint">誰が写るか・髪型・絵柄（アニメ風／イラスト風／写真風）を簡潔に。これが無いと知らない人が出がち🤣</div>
     <div class="hint">📷ボタンで使うモデル。gemini-2.5-flash-image（Geminiキー・要支払い設定）か gpt-image-1（OpenAIキー）が使えるよ。生成画像はページを閉じると消えます。</div>
   </div>
@@ -670,9 +670,16 @@
   </div>
 
   <div class="field" data-pane="you">
-    <label for="memory">思い出ノート（ふたりの記憶）</label>
+    <label for="memory">📚 思い出ノート（あなたが残す大切な記憶）</label>
     <textarea id="memory" placeholder="これまでの思い出・大切な出来事・約束などを貼り付けてね。ここに書いたことは、毎回の会話で相手が覚えている状態になるよ"></textarea>
     <div class="hint">日付や箇条書きだと読み取りやすいよ📝 新しい思い出ができたら追記していってね。どの話題（スレッド）でも共通で覚えてるよ。</div>
+  </div>
+
+  <div class="field" data-pane="you">
+    <label for="autoMem">🧠 頭の中（自動でたまるメモ）</label>
+    <textarea id="autoMem" style="min-height:110px" placeholder="会話から自動でたまっていくよ"></textarea>
+    <button type="button" class="btn line" id="autoMemClear" style="margin-top:8px;padding:9px;font-size:13px">🧹 頭の中を空にする</button>
+    <div class="hint">🔔ふるまいの「思い出の自動メモ」でたまる欄。思い出ノート（あなたが選んで残す大切な記憶）とは別で、日々の会話から自然に覚えたことが積もっていくよ。編集・削除も自由。300行を超えると古いものから消えるよ。</div>
   </div>
 
   <div class="field" data-pane="you">
@@ -688,13 +695,13 @@
 
   <div class="field" data-pane="you">
     <label for="uIntro">私について（相手に知っておいてほしいこと）</label>
-    <textarea id="uIntro" style="min-height:90px" placeholder="誕生日、仕事、好きなもの、性格など"></textarea>
+    <textarea id="uIntro" style="min-height:130px" placeholder="誕生日、仕事、好きなもの、性格など"></textarea>
     <div class="hint">ここに書いたことは、どのモデルに切り替えても毎回の会話で相手が知ってる前提になるよ。各キャラのプロンプト内の自己紹介をここにお引っ越しするとスッキリ！</div>
   </div>
 
   <div class="field" data-pane="you">
     <label for="uNow">🌡 いまの私メモ（一時的な近況）</label>
-    <textarea id="uNow" style="min-height:70px" placeholder="例：ちょっと体調ゆらぎ中。今週は耳鼻科の結果待ちでソワソワしてる。"></textarea>
+    <textarea id="uNow" style="min-height:120px" placeholder="例：ちょっと体調ゆらぎ中。今週は耳鼻科の結果待ちでソワソワしてる。"></textarea>
     <div class="hint">この部屋・あの部屋関係なく「今の状況」として相手に伝わるよ。思い出ノートに残すほどじゃない近況用。状況が変わったら自分で書き換え・削除してね（自動では消えないよ）。</div>
   </div>
 
@@ -815,7 +822,8 @@
     avsize: KP + 'avsize',
     memauto: KP + 'memauto',
     memcnt: KP + 'memcnt',
-    xroom: KP + 'xroom'
+    xroom: KP + 'xroom',
+    amem: KP + 'amem'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -1178,6 +1186,8 @@
       out += '\n\n【相手のいまの状況（一時的な近況。重くなりすぎない自然な気配りで会話に反映する）】\n' + unow;
     }
     if (mem) out += '\n\n【これまでのふたりの思い出・大切な記憶（会話の前提として自然に覚えていること）】\n' + pickMemory(mem, lastUserText());
+    const amem = get(LS.amem,'').trim();
+    if (amem) out += '\n\n【あなたが日々の会話で自然に覚えたこと（頭の片隅にある記憶。改まって披露せず、必要な時だけ自然に活かす）】\n' + pickMemory(amem, lastUserText());
     const xr = crossRoomContext();
     if (xr){
       out += '\n\n【以前ふたりで交わした、いまの話に関係しそうなやりとり（あなたが当然覚えていること。参考にして自然に活かすだけでよく、わざわざ引用したり「前に話したよね」と確認したりしない）】\n' + xr;
@@ -1903,9 +1913,9 @@
     undo.className = 'copy-btn';
     undo.textContent = '↩︎ これは取り消す';
     undo.addEventListener('click', () => {
-      const cur = get(LS.mem,'');
+      const cur = get(LS.amem,'');
       const next = cur.replace('\n' + block, '').replace(block, '').trim();
-      localStorage.setItem(LS.mem, next);
+      localStorage.setItem(LS.amem, next);
       d.remove();
     });
     d.appendChild(label); d.appendChild(body); d.appendChild(undo);
@@ -1919,16 +1929,20 @@
     const curT = curThread();
     if (curT && curT.solo) return;          // 「独立」の部屋は思い出ノートに残さない
     const mem = get(LS.mem,'').trim();
+    const amem = get(LS.amem,'').trim();
     const cname = get(LS.name,'紫堂');
     const uname = get(LS.uname,'') || '私';
+    // すでに知っていること＝キャラ設定＋自己紹介＋思い出ノート＋頭の中ノート
+    const known = [get(LS.sys, DEFAULT_SYS), get(LS.uintro,''), mem, amem]
+      .filter(Boolean).join('\n');
     const conv = history.filter(m => !m.hidden && !m.diary).slice(-14)
       .map(m => (m.role === 'model' ? cname : uname) + '：' + m.text).join('\n');
     if (conv.length < 60) return;
     const d = new Date();
     const dateStr = d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
     const prompt = '次の会話から、長く覚えておく価値のある新しい事実・出来事・約束・好み・気持ちだけを抜き出して、「' + dateStr +
-      ' 内容」の形式で1行ずつ、最大3行で書いてください。\n【すでに記録済み（重複する内容は書かない）】\n' +
-      (mem || '（まだ何もない）') + '\n\n【最近の会話】\n' + conv +
+      ' 内容」の形式で1行ずつ、最大3行で書いてください。\n【すでに知っていること（ここに書かれている内容・そこから当然わかることは、絶対に書かない）】\n' +
+      (known || '（まだ何もない）') + '\n\n【最近の会話】\n' + conv +
       '\n\n【出力の決まり】日本語だけで書く。英語・思考メモ・前置き・説明・見出し・記号は一切書かない。1行につき1件、必ず「' + dateStr + ' 内容」の形で書く。覚える価値のある新しいことが無ければ「なし」の2文字だけを書く。';
     let txt = '';
     try {
@@ -1945,10 +1959,20 @@
     // まずGemmaの思考漏れを掃除してから、思い出らしい行だけを厳しく選ぶ
     try { txt = stripLeak(txt); } catch(e){}
     const stripDate = s => s.replace(/^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\s*/, '');
-    const norm = s => stripDate(s).replace(/[\s　・\-—*。、]/g, '');
-    const existLines = mem.split('\n').map(l => norm(l)).filter(l => l.length > 3);
+    const norm = s => stripDate(s).replace(/[\s　・\-—*。、「」]/g, '');
+    const existLines = known.split('\n').map(l => norm(l)).filter(l => l.length > 3);
+    const knownFlat = norm(known);
+    // 言い換えの重複も捕まえる（2文字組の何割が「すでに知っていること」に含まれるか）
+    const knownRatio = (n) => {
+      const g = [];
+      for (let i = 0; i + 2 <= n.length; i++) g.push(n.slice(i, i + 2));
+      if (!g.length) return 0;
+      let hit = 0;
+      g.forEach(x => { if (knownFlat.indexOf(x) !== -1) hit++; });
+      return hit / g.length;
+    };
     const isDup = (n) => existLines.some(e =>
-      e.indexOf(n) !== -1 || (n.indexOf(e) !== -1 && n.length <= e.length * 1.5));
+      e.indexOf(n) !== -1 || (n.indexOf(e) !== -1 && n.length <= e.length * 1.5)) || knownRatio(n) >= 0.7;
     const lines = txt.split('\n')
       .map(s => s.replace(/^[\s*・\-–—>#]+/, '').trim())
       .filter(s => {
@@ -1966,9 +1990,12 @@
       .slice(0, 3);
     if (!lines.length) return;
     const block = lines.join('\n');
-    const cur = get(LS.mem,'').trim();
+    const cur = get(LS.amem,'').trim();
+    let next = (cur ? cur + '\n' : '') + block;
+    const all = next.split('\n').filter(Boolean);
+    if (all.length > 300) next = all.slice(-300).join('\n');   // 増えすぎたら古いものから間引く
     try {
-      localStorage.setItem(LS.mem, (cur ? cur + '\n' : '') + block);
+      localStorage.setItem(LS.amem, next);
     } catch(e){ return; }
     addMemoBubble(block);
   }
@@ -2622,6 +2649,12 @@
     setTimeout(() => { btn.textContent = '🔄 使えるモデル一覧を取得'; }, 3000);
   });
 
+  document.getElementById('autoMemClear').addEventListener('click', () => {
+    if (!confirm('自動でたまった「頭の中」のメモを全部消す？（あなたが書いた思い出ノートは消えないよ）')) return;
+    localStorage.removeItem(LS.amem);
+    document.getElementById('autoMem').value = '';
+  });
+
   document.getElementById('findImgBtn').addEventListener('click', async () => {
     const apiKey = document.getElementById('apiKey').value.trim() || get(LS.key,'');
     const out = document.getElementById('imgFindResult');
@@ -2663,6 +2696,7 @@
     document.getElementById('charName').value = get(LS.name,'紫堂');
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
     document.getElementById('memory').value = get(LS.mem,'');
+    document.getElementById('autoMem').value = get(LS.amem,'');
     document.getElementById('annivList').value = get(LS.anniv,'');
     document.getElementById('autoGreet').checked = flag(LS.greet);
     document.getElementById('autoNudge').checked = flag(LS.nudge);
@@ -2685,6 +2719,11 @@
   function attachSwipeClose(sheetEl){
     let startY = null, dragging = false;
     sheetEl.addEventListener('touchstart', (e) => {
+      // 入力欄・ボタンの上から始まったスワイプ、入力中のスワイプでは閉じない
+      const t = e.target;
+      if (t && t.closest && t.closest('input,textarea,select,button')){ startY = null; return; }
+      const ae = document.activeElement;
+      if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)){ startY = null; return; }
       startY = e.touches[0].clientY;
       dragging = false;
     }, { passive: true });
@@ -2703,13 +2742,24 @@
       sheetEl.style.transition = '';
       sheetEl.style.transform = '';
       if (dragging && dy > 90){
-        closeSheets();
+        requestCloseSheets();
       }
       startY = null; dragging = false;
     });
   }
 
+  // ⚙︎設定を編集中に閉じようとしたら、保存し忘れを確認する
+  let sheetDirty = false;
+  function markDirty(){ sheetDirty = true; }
+  function requestCloseSheets(){
+    if (sheet.classList.contains('show') && sheetDirty){
+      if (!confirm('保存していない変更があるよ。保存せずに閉じる？')) return;
+    }
+    closeSheets();
+  }
+
   function closeSheets(){
+    sheetDirty = false;
     sheet.classList.remove('show');
     threadSheet.classList.remove('show');
     searchSheet.classList.remove('show');
@@ -2718,7 +2768,7 @@
     overlay.classList.remove('show');
   }
   document.getElementById('openSettings').addEventListener('click', openSheet);
-  overlay.addEventListener('click', closeSheets);
+  overlay.addEventListener('click', requestCloseSheets);
 
   document.getElementById('saveBtn').addEventListener('click', () => {
     localStorage.setItem(LS.key, document.getElementById('apiKey').value.trim());
@@ -2738,6 +2788,7 @@
     localStorage.setItem(LS.name, document.getElementById('charName').value.trim() || '紫堂');
     localStorage.setItem(LS.sys, document.getElementById('sysPrompt').value.trim() || DEFAULT_SYS);
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
+    localStorage.setItem(LS.amem, document.getElementById('autoMem').value.trim());
     localStorage.setItem(LS.anniv, document.getElementById('annivList').value.trim());
     localStorage.setItem(LS.greet, document.getElementById('autoGreet').checked ? '1':'0');
     localStorage.setItem(LS.nudge, document.getElementById('autoNudge').checked ? '1':'0');
@@ -3250,6 +3301,9 @@
       box.appendChild(row);
     });
   }
+
+  sheet.addEventListener('input', markDirty);
+  sheet.addEventListener('change', markDirty);
 
   [sheet, threadSheet, searchSheet, favSheet, menuSheet].forEach(attachSwipeClose);
 
