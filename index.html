@@ -823,7 +823,8 @@
     memauto: KP + 'memauto',
     memcnt: KP + 'memcnt',
     xroom: KP + 'xroom',
-    amem: KP + 'amem'
+    amem: KP + 'amem',
+    nudgeAt: KP + 'nudgeat'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -1935,7 +1936,7 @@
     // すでに知っていること＝キャラ設定＋自己紹介＋思い出ノート＋頭の中ノート
     const known = [get(LS.sys, DEFAULT_SYS), get(LS.uintro,''), mem, amem]
       .filter(Boolean).join('\n');
-    const conv = history.filter(m => !m.hidden && !m.diary).slice(-14)
+    const conv = history.filter(m => !m.hidden && !m.diary).slice(-24)
       .map(m => (m.role === 'model' ? cname : uname) + '：' + m.text).join('\n');
     if (conv.length < 60) return;
     const d = new Date();
@@ -1943,7 +1944,8 @@
     const prompt = '次の会話から、長く覚えておく価値のある新しい事実・出来事・約束・好み・気持ちだけを抜き出して、「' + dateStr +
       ' 内容」の形式で1行ずつ、最大3行で書いてください。\n【すでに知っていること（ここに書かれている内容・そこから当然わかることは、絶対に書かない）】\n' +
       (known || '（まだ何もない）') + '\n\n【最近の会話】\n' + conv +
-      '\n\n【出力の決まり】日本語だけで書く。英語・思考メモ・前置き・説明・見出し・記号は一切書かない。1行につき1件、必ず「' + dateStr + ' 内容」の形で書く。覚える価値のある新しいことが無ければ「なし」の2文字だけを書く。';
+      '\n\n【必ず拾うもの】約束・予定・これからすること（日付や曜日を含めて書く）、相手の体調や気持ちの変化、初めて出てきた好み・名前・出来事。' +
+      '\n【出力の決まり】日本語だけで書く。英語・思考メモ・前置き・説明・見出し・記号は一切書かない。1行につき1件、必ず「' + dateStr + ' 内容」の形で書く。覚える価値のある新しいことが無ければ「なし」の2文字だけを書く。';
     let txt = '';
     try {
       const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent?key=' + encodeURIComponent(key), {
@@ -1971,8 +1973,12 @@
       g.forEach(x => { if (knownFlat.indexOf(x) !== -1) hit++; });
       return hit / g.length;
     };
-    const isDup = (n) => existLines.some(e =>
-      e.indexOf(n) !== -1 || (n.indexOf(e) !== -1 && n.length <= e.length * 1.5)) || knownRatio(n) >= 0.7;
+    const isDup = (n, raw) => {
+      if (existLines.some(e => e.indexOf(n) !== -1 || (n.indexOf(e) !== -1 && n.length <= e.length * 1.5))) return true;
+      // 約束・予定は取りこぼしたくないので、重複と見なす基準をゆるめる
+      const isPlan = /約束|予定|行く|来る|会う|買う|明日|明後日|来週|今度|今週|曜日|until|まで/.test(raw || '');
+      return knownRatio(n) >= (isPlan ? 0.88 : 0.7);
+    };
     const lines = txt.split('\n')
       .map(s => s.replace(/^[\s*・\-–—>#]+/, '').trim())
       .filter(s => {
@@ -1985,7 +1991,7 @@
         if (en > 4) return false;                                 // 英語まじり＝思考メモ
         return true;
       })
-      .filter(s => { const n = norm(s); return n.length > 3 && !isDup(n); })
+      .filter(s => { const n = norm(s); return n.length > 3 && !isDup(n, s); })
       .map(s => /^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/.test(s) ? s : (dateStr + ' ' + s))
       .slice(0, 3);
     if (!lines.length) return;
@@ -2100,13 +2106,38 @@
     } catch(e){ return ''; }
   }
 
+  // アプリを閉じている間に追いメッセージの時間が来ていたら、開いた時に届ける
+  function checkPendingNudge(){
+    if (!flag(LS.nudge)) return false;
+    if (activeKeyMissing()) return false;
+    if (curThread() && curThread().rp) return false;
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(LS.nudgeAt) || 'null'); } catch(e){ return false; }
+    if (!s || s.t !== curId || !s.at) return false;
+    if (Date.now() < s.at) {
+      // まだ時間前：残り時間で予約を取り直す
+      nudgeCount = s.n || 0;
+      nudgeDueAt = s.at;
+      clearTimeout(nudgeTimer);
+      nudgeTimer = setTimeout(() => {
+        if (document.visibilityState !== 'visible') return;
+        fireNudge(false);
+      }, Math.max(1000, s.at - Date.now()));
+      return false;
+    }
+    nudgeCount = s.n || 0;
+    if (nudgeCount >= MAX_NUDGES){ try { localStorage.removeItem(LS.nudgeAt); } catch(e){} return false; }
+    fireNudge(true);
+    return true;
+  }
+
   async function maybeGreet(){
-    if (!flag(LS.greet)) return;
-    if (activeKeyMissing()) return;
-    if (curThread() && curThread().rp) return; // 物語モードでは時間ベースの第一声はしない
+    if (!flag(LS.greet)) return false;
+    if (activeKeyMissing()) return false;
+    if (curThread() && curThread().rp) return false; // 物語モードでは時間ベースの第一声はしない
     const lastTs = history.length ? (history[history.length-1].ts || 0) : 0;
     const gap = Date.now() - lastTs;
-    if (lastTs !== 0 && gap < GREET_GAP_HOURS*3600*1000) return;
+    if (lastTs !== 0 && gap < GREET_GAP_HOURS*3600*1000) return false;
 
     bridgeGapMs = (lastTs !== 0) ? gap : 0;
     const extras = [annivContext(), await weatherContext()].filter(Boolean).join(' ');
@@ -2131,6 +2162,7 @@
     if (extras) p += ' ' + extras;
     p += '）';
     aiTurn(p);
+    return true;
   }
 
   /* ---------- idle nudge ---------- */
@@ -2141,6 +2173,7 @@
     if (nudgeCount >= MAX_NUDGES) return;
     nudgeCount++;
     nudgeDueAt = 0;
+    try { localStorage.removeItem(LS.nudgeAt); } catch(e){}
     const together = get(LS.world,'app') === 'together';
     let p;
     if (together){
@@ -2158,10 +2191,14 @@
   function scheduleNudge(){
     clearTimeout(nudgeTimer);
     nudgeDueAt = 0;
+    try { localStorage.removeItem(LS.nudgeAt); } catch(e){}
     if (!flag(LS.nudge)) return;
     if (curThread() && curThread().rp) return; // 物語モードでは追いメッセージもしない
     if (nudgeCount >= MAX_NUDGES) return;
     nudgeDueAt = Date.now() + nudgeMinutes()*60*1000;
+    try {
+      localStorage.setItem(LS.nudgeAt, JSON.stringify({ t: curId, at: nudgeDueAt, n: nudgeCount }));
+    } catch(e){}
     nudgeTimer = setTimeout(() => {
       if (document.visibilityState !== 'visible') return; // 離れてる間は visibilitychange 側で拾う
       fireNudge(false);
@@ -3404,7 +3441,10 @@
   if (activeKeyMissing()) {
     setTimeout(openSheet, 600);
   } else {
-    setTimeout(maybeGreet, 800);
+    setTimeout(async () => {
+      const greeted = await maybeGreet();
+      if (!greeted) checkPendingNudge();
+    }, 800);
   }
 })();
 </script>
