@@ -199,7 +199,8 @@
     background:var(--surface);color:var(--ink);
     font-family:inherit;font-size:13.5px;cursor:pointer;
   }
-  #actBar #actCopy{flex:1}
+  #actBar #actCopy{flex:0 0 46px}
+  #actBar #actFav{flex:1}
   #actBar #actMain{flex:1.4;color:var(--ao);font-weight:700}
   #actBar #actCancel{flex:0 0 44px;color:var(--ink-dim)}
   body.light #actBar{box-shadow:0 6px 18px rgba(70,61,53,.25)}
@@ -470,7 +471,8 @@
 <main id="chat" aria-live="polite"></main>
 <button id="toBottom" aria-label="最新のメッセージへ">⬇</button>
 <div id="actBar" hidden>
-  <button type="button" id="actCopy">📋 コピー</button>
+  <button type="button" id="actCopy">📋</button>
+  <button type="button" id="actFav">⭐ 保存</button>
   <button type="button" id="actMain"></button>
   <button type="button" id="actCancel">✕</button>
 </div>
@@ -507,6 +509,7 @@
   <button id="letterBtn" class="menu-row">💌 手紙を書いてもらう</button>
   <button id="diaryBtn" class="menu-row">📖 今日の日記を書いてもらう</button>
   <button id="memoryBtn" class="menu-row">💭 今日のことを思い出に追加</button>
+  <button id="imgPromptBtn" class="menu-row">🎨 いまの場面の画像プロンプトを作る</button>
   <button id="favBtn" class="menu-row">⭐ ふたりのアルバム・記録</button>
   <button id="openSearch" class="menu-row">🔎 メッセージ検索</button>
 </div>
@@ -773,6 +776,8 @@
   <button class="btn line" data-pane="data" id="exportBtn">📜 この話題を読み物として保存</button>
   <input type="file" id="restoreInput" accept="application/json,.json" hidden>
   <div class="hint" data-pane="data">バックアップにはAPIキーも含まれるから、ファイルは人に送らず大切に保管してね🔐</div>
+  <button class="btn line" data-pane="data" id="clearKeysBtn">🔑 APIキーだけを消す</button>
+  <div class="hint" data-pane="data">キー欄を空にして保存しても前のキーは残る仕組みにしたよ（うっかり消え防止）。本当に消したい時だけここから。</div>
   <div class="hint" data-pane="data" id="storageMeter" style="margin-top:8px"></div>
   <button class="btn ghost" data-pane="data" id="clearBtn">この話題の履歴を消す</button>
 </div>
@@ -1256,6 +1261,7 @@
     }
     history.forEach((m, idx) => {
       if (m.hidden) return;
+      if (m.imgp){ addPromptBubble(m.text, false); return; }
       let el;
       if (m.diary) el = addDiaryBubble(m.text, false, m.label, m.ts);
       else el = addBubble(m.role === 'model' ? 'ai' : 'user', m.text, false, m.ts);
@@ -1501,7 +1507,7 @@
     const imgs = !image ? [] : (Array.isArray(image) ? image : [image]);
 
     // 会話履歴を共通形式に
-    const turns = history.slice(-histDepth()).map(m => ({
+    const turns = history.filter(m => !m.imgp).slice(-histDepth()).map(m => ({
       role: m.role === 'model' ? 'assistant' : 'user',
       text: m.text
     }));
@@ -1567,7 +1573,7 @@
     } else {
       const apiKey = get(LS.key,'');
       if (!apiKey) throw new Error('GeminiのAPIキーが未設定だよ。⚙︎で入れてね');
-      const msgs = history.slice(-histDepth()).map(m => ({
+      const msgs = history.filter(m => !m.imgp).slice(-histDepth()).map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
       }));
@@ -1656,7 +1662,7 @@
       if (provider === 'gemini' && /no longer available|interactions/i.test(err.message)){
         const gKey = get(LS.key,'');
         let convo = fullSystemPrompt() + '\n\n【これまでの会話】\n';
-        history.slice(-histDepth()).forEach(m => {
+        history.filter(m => !m.imgp).slice(-histDepth()).forEach(m => {
           convo += (m.role === 'model' ? '相手' : 'ユーザー') + '：' + m.text + '\n';
         });
         if (extraHiddenPrompt) convo += 'ユーザー：' + extraHiddenPrompt + '\n';
@@ -1924,6 +1930,78 @@
     scrollBottom();
   }
 
+  function addPromptBubble(text, save){
+    if (save){
+      history.push({ role:'model', text: text, imgp: true, ts: Date.now() });
+      saveHistory();
+    }
+    const d = document.createElement('div');
+    d.className = 'msg memo';
+    const label = document.createElement('div');
+    label.className = 'memo-label';
+    label.textContent = '🎨 この場面の画像プロンプト（コピーして画像生成AIへ）';
+    const body = document.createElement('div');
+    body.textContent = text;
+    body.style.whiteSpace = 'pre-wrap';
+    const cp = document.createElement('button');
+    cp.className = 'copy-btn';
+    cp.textContent = '📋 コピー';
+    cp.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        cp.textContent = '✓ コピーした！';
+        setTimeout(() => { cp.textContent = '📋 コピー'; }, 1200);
+      } catch(e){}
+    });
+    d.appendChild(label); d.appendChild(body); d.appendChild(cp);
+    chatEl.appendChild(d);
+    scrollBottom();
+  }
+
+  async function makeImagePrompt(){
+    const key = get(LS.key,'');
+    if (!key){ addBubble('error','画像プロンプト作りにはGeminiのAPIキーが必要だよ（無料のGemmaを使うから料金はかからない）'); return; }
+    if (busy) return;
+    busy = true;
+    sendBtn.disabled = true;
+    const typing = showTyping();
+    try {
+      const look = get(LS.imgLook,'').trim();
+      const cname = get(LS.name,'紫堂');
+      const uname = get(LS.uname,'') || '私';
+      const conv = history.filter(m => !m.hidden && !m.diary && !m.imgp).slice(-10)
+        .map(m => (m.role === 'model' ? cname : uname) + '：' + m.text).join('\n');
+      const p = '次の会話の「いまの場面」を、画像生成AIに渡すプロンプトにしてください。\n' +
+        (look ? '【登場人物の見た目・画風（必ず反映）】\n' + look + '\n\n' : '') +
+        '【会話】\n' + conv + '\n\n' +
+        '【書き方】日本語で、そのまま画像生成AIに貼れる文章にする。次の順で、全体で200字程度：\n' +
+        '1) 場所と時間帯　2) 登場人物とその見た目・服装　3) 何をしているか・表情や距離感　4) 構図（自撮り／横から／手元アップ等）　5) 画風と雰囲気\n' +
+        '説明・前置き・見出し・箇条書き記号は書かず、プロンプト本文だけを出力すること。';
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent?key=' + encodeURIComponent(key), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{ role:'user', parts:[{ text: p }] }] })
+      });
+      const data = await res.json();
+      typing.remove();
+      if (!res.ok){
+        addBubble('error','プロンプトを作れなかった…（' + ((data && data.error && data.error.message) || ('HTTP ' + res.status)) + '）');
+      } else {
+        let txt = '';
+        try { txt = data.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){}
+        try { if (data.usageMetadata) addTokens(data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount, 'gemma-4-31b-it'); } catch(e){}
+        try { txt = stripLeak(txt); } catch(e){}
+        txt = (txt || '').trim();
+        if (txt) addPromptBubble(txt, true);
+        else addBubble('error','プロンプトが空だったよ。もう一度試してみて');
+      }
+    } catch(e){
+      typing.remove();
+      addBubble('error','プロンプト作成でエラー: ' + e.message);
+    }
+    busy = false;
+    sendBtn.disabled = false;
+  }
+
   async function autoMemoryExtract(){
     const key = get(LS.key,'');
     if (!key) return;                       // Geminiキーが無ければ静かに何もしない
@@ -1936,16 +2014,25 @@
     // すでに知っていること＝キャラ設定＋自己紹介＋思い出ノート＋頭の中ノート
     const known = [get(LS.sys, DEFAULT_SYS), get(LS.uintro,''), mem, amem]
       .filter(Boolean).join('\n');
-    const conv = history.filter(m => !m.hidden && !m.diary).slice(-24)
+    const conv = history.filter(m => !m.hidden && !m.diary && !m.imgp).slice(-24)
       .map(m => (m.role === 'model' ? cname : uname) + '：' + m.text).join('\n');
     if (conv.length < 60) return;
     const d = new Date();
     const dateStr = d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate();
-    const prompt = '次の会話から、長く覚えておく価値のある新しい事実・出来事・約束・好み・気持ちだけを抜き出して、「' + dateStr +
-      ' 内容」の形式で1行ずつ、最大3行で書いてください。\n【すでに知っていること（ここに書かれている内容・そこから当然わかることは、絶対に書かない）】\n' +
+    const prompt = '次の会話から、これから先もずっと役に立つ「人となりの記録」だけを厳しく選んで抜き出してください。\n' +
+      '【すでに知っていること（ここに書かれている内容・そこから当然わかることは、絶対に書かない）】\n' +
       (known || '（まだ何もない）') + '\n\n【最近の会話】\n' + conv +
-      '\n\n【必ず拾うもの】約束・予定・これからすること（日付や曜日を含めて書く）、相手の体調や気持ちの変化、初めて出てきた好み・名前・出来事。' +
-      '\n【出力の決まり】日本語だけで書く。英語・思考メモ・前置き・説明・見出し・記号は一切書かない。1行につき1件、必ず「' + dateStr + ' 内容」の形で書く。覚える価値のある新しいことが無ければ「なし」の2文字だけを書く。';
+      '\n\n【書くもの：半年後に読んでも意味がある、長く効くことだけ】' +
+      '\n・相手の好み、苦手なもの、癖、こだわり、価値観' +
+      '\n・ふたりの関係や習慣の変化（新しく決めた日課、呼び方、続いている約束、記念日）' +
+      '\n・生活の基本情報で新しく分かったこと（家族、ペット、仕事、住まい、大事な持ち物）' +
+      '\n・特別な出来事（初めてのこと、強く印象に残った出来事、旅行や大きな予定）' +
+      '\n\n【書かないもの：すぐ流れていくこと】' +
+      '\n・今日や明日レベルの細かい用事、その場で済む予定（例：「明日◯◯をすることにした」）' +
+      '\n・「〜しようと決めた」だけで終わる一時的な話' +
+      '\n・その日の天気・気分・体調のゆらぎ' +
+      '\n・会話を読めば分かること、すでに知っていること' +
+      '\n\n【出力の決まり】日本語だけで書く。英語・思考メモ・前置き・説明・見出し・記号は一切書かない。1行につき1件、必ず「' + dateStr + ' 内容」の形で書く。最大2行。迷ったら書かない。該当が無ければ「なし」の2文字だけを書く。';
     let txt = '';
     try {
       const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent?key=' + encodeURIComponent(key), {
@@ -1993,7 +2080,8 @@
       })
       .filter(s => { const n = norm(s); return n.length > 3 && !isDup(n, s); })
       .map(s => /^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/.test(s) ? s : (dateStr + ' ' + s))
-      .slice(0, 3);
+      .filter(s => !/^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\s*(明日|今日|今夜|今晩|今から|これから|さっき)[^。]{0,20}こと(に|を)(した|決めた|決める)/.test(s))
+      .slice(0, 2);
     if (!lines.length) return;
     const block = lines.join('\n');
     const cur = get(LS.amem,'').trim();
@@ -2686,6 +2774,13 @@
     setTimeout(() => { btn.textContent = '🔄 使えるモデル一覧を取得'; }, 3000);
   });
 
+  document.getElementById('clearKeysBtn').addEventListener('click', () => {
+    if (!confirm('保存されているAPIキー（Gemini・OpenAI・Anthropic・OpenRouter）を全部消す？会話や思い出は消えないよ')) return;
+    [LS.key, LS.oaKey, LS.antKey, LS.orKey].forEach(k => localStorage.removeItem(k));
+    ['apiKey','oaKey','antKey','orKey'].forEach(id => { document.getElementById(id).value = ''; });
+    alert('APIキーを消したよ');
+  });
+
   document.getElementById('autoMemClear').addEventListener('click', () => {
     if (!confirm('自動でたまった「頭の中」のメモを全部消す？（あなたが書いた思い出ノートは消えないよ）')) return;
     localStorage.removeItem(LS.amem);
@@ -2808,10 +2903,15 @@
   overlay.addEventListener('click', requestCloseSheets);
 
   document.getElementById('saveBtn').addEventListener('click', () => {
-    localStorage.setItem(LS.key, document.getElementById('apiKey').value.trim());
-    localStorage.setItem(LS.oaKey, document.getElementById('oaKey').value.trim());
-    localStorage.setItem(LS.antKey, document.getElementById('antKey').value.trim());
-    localStorage.setItem(LS.orKey, document.getElementById('orKey').value.trim());
+    // キー欄が空のときは前のキーを守る（iPhoneがパスワード欄を勝手に空にすることがあるため）
+    const saveKey = (id, lsk) => {
+      const v = document.getElementById(id).value.trim();
+      if (v) localStorage.setItem(lsk, v);
+    };
+    saveKey('apiKey', LS.key);
+    saveKey('oaKey', LS.oaKey);
+    saveKey('antKey', LS.antKey);
+    saveKey('orKey', LS.orKey);
     localStorage.setItem(LS.model, selectedModel());
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.imgLook, document.getElementById('imgLook').value.trim());
@@ -2988,11 +3088,34 @@
   /* ---------- message action bar ---------- */
   let actCtx = null;
   const actBar = document.getElementById('actBar');
-  function showActBar(text, mainLabel, mainFn){
-    actCtx = { text: text, mainFn: mainFn };
-    document.getElementById('actMain').textContent = mainLabel;
+  function saveFav(m, bubble){
+    if (!m) return;
+    let favs = [];
+    try { favs = JSON.parse(get(LS.favs,'[]')); } catch(e){ favs = []; }
+    const tcur = curThread();
+    favs.unshift({ text: m.text, role: m.role, ts: m.ts || 0, tn: tcur ? tcur.name : '', saved: Date.now() });
+    if (favs.length > 200) favs = favs.slice(0, 200);
+    try { localStorage.setItem(LS.favs, JSON.stringify(favs)); } catch(e){}
+    if (bubble){
+      bubble.classList.add('flash');
+      setTimeout(() => bubble.classList.remove('flash'), 1500);
+    }
+  }
+  function showActBar(text, mainLabel, mainFn, favMsg, favBubble){
+    actCtx = { text: text, mainFn: mainFn, favMsg: favMsg, favBubble: favBubble };
+    const mainBtn = document.getElementById('actMain');
+    mainBtn.textContent = mainLabel || '';
+    mainBtn.style.display = mainLabel ? '' : 'none';
+    document.getElementById('actFav').style.display = favMsg ? '' : 'none';
     actBar.hidden = false;
   }
+  document.getElementById('actFav').addEventListener('click', () => {
+    if (!actCtx || !actCtx.favMsg) return;
+    saveFav(actCtx.favMsg, actCtx.favBubble);
+    const btn = document.getElementById('actFav');
+    btn.textContent = '✓ 保存した！';
+    setTimeout(() => { btn.textContent = '⭐ 保存'; hideActBar(); }, 700);
+  });
   function hideActBar(){ actBar.hidden = true; actCtx = null; }
   document.getElementById('actCancel').addEventListener('click', hideActBar);
   document.getElementById('actCopy').addEventListener('click', async () => {
@@ -3026,12 +3149,12 @@
     // 最後の相手の返事 → コピー or やり直し
     if (isAi && b === last && history[li] && history[li].role === 'model' && !history[li].diary){
       const idx = li;
-      showActBar(history[idx].text, '🔄 返事をやり直す', () => {
+      showActBar(history[idx].text, '🔄 やり直す', () => {
         history.splice(idx, 1);
         saveHistory();
         renderAll();
         aiTurn(null);
-      });
+      }, history[idx], b);
       return;
     }
 
@@ -3044,7 +3167,7 @@
       if (ui >= 0){
         const after = history.slice(ui+1).filter(m => !m.hidden);
         if (after.length <= 1){
-          showActBar(history[ui].text, '✏️ 打ち直す（この往復は消える）', () => {
+          showActBar(history[ui].text, '✏️ 打ち直す', () => {
             inputEl.value = history[ui].text
               .replace(/\n（写真を\d+枚見せた）$/, '')
               .replace(/^（写真を\d+枚見せた）$/, '');
@@ -3054,7 +3177,7 @@
             inputEl.style.height = 'auto';
             inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
             inputEl.focus();
-          });
+          }, history[ui], b);
           return;
         }
       }
@@ -3065,16 +3188,7 @@
     if (hidx === undefined) return;
     const m = history[Number(hidx)];
     if (!m || m.hidden || m.diary) return;
-    showActBar(m.text, '⭐ アルバムに保存', () => {
-      let favs = [];
-      try { favs = JSON.parse(get(LS.favs,'[]')); } catch(e){ favs = []; }
-      const tcur = curThread();
-      favs.unshift({ text: m.text, role: m.role, ts: m.ts || 0, tn: tcur ? tcur.name : '', saved: Date.now() });
-      if (favs.length > 200) favs = favs.slice(0, 200);
-      localStorage.setItem(LS.favs, JSON.stringify(favs));
-      b.classList.add('flash');
-      setTimeout(() => b.classList.remove('flash'), 1500);
-    });
+    showActBar(m.text, '', null, m, b);
   });
 
   /* ---------- fav sheet (album) ---------- */
@@ -3343,6 +3457,11 @@
   sheet.addEventListener('change', markDirty);
 
   [sheet, threadSheet, searchSheet, favSheet, menuSheet].forEach(attachSwipeClose);
+
+  document.getElementById('imgPromptBtn').addEventListener('click', () => {
+    closeSheets();
+    makeImagePrompt();
+  });
 
   document.getElementById('favBtn').addEventListener('click', () => {
     closeSheets();
