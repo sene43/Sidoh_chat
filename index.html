@@ -41,13 +41,15 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overscroll-behavior:none}
+  html{background:rgba(24,15,22,1)}                 /* 画面最下部の帯を入力欄と同じ色に（iOS 27対策） */
+  html.light{background:rgba(250,245,238,1)}
   body{
     position:fixed;inset:0;width:100%;   /* 画面ごと上に逃げるのを防ぐ */
     font-family:"KaomojiGuard","Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
     background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
     color:var(--ink);
     display:flex;flex-direction:column;
-    height:100dvh;
+    /* 高さは指定しない：position:fixed＋inset:0で画面の上端〜下端にぴったり張り付く（iOS 27対策） */
     overflow:hidden;
   }
 
@@ -261,6 +263,8 @@
     background:rgba(24,15,22,.9);
     border-top:1px solid rgba(183,110,121,.18);
   }
+  body.kb #composer{padding-bottom:8px}   /* キーボード表示中はホームバー分の余白はいらない */
+  body.iosbar #composer{padding-bottom:10px}   /* iOS 27の下のふたがある時も余白はいらない */
   #toolBtns{display:flex;flex:0 0 auto}
   #photoBtn,#attachBtn{
     flex:0 0 auto;
@@ -2694,6 +2698,7 @@
       document.body.style.backgroundAttachment = '';
     }
     document.body.classList.toggle('light', flag0(LS.light));
+    document.documentElement.classList.toggle('light', document.body.classList.contains('light'));
   }
 
   function fileToDataUrl(file, maxDim, square, cb){
@@ -3843,10 +3848,39 @@
   });
   /* ---------- キーボードが出た時に、見えている範囲へ画面を合わせる（iPhone対策） ---------- */
   let kbStickBottom = false;
+  // ホーム画面アプリの時は「画面そのものの高さ」を使う（iOS 27で下に帯ができる対策）
+  function fullScreenH(){
+    const standalone = (window.navigator.standalone === true) ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (!standalone) return window.innerHeight;
+    const portrait = window.innerHeight >= window.innerWidth;
+    const scr = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    return Math.max(window.innerHeight, scr);
+  }
+  function resetFit(){
+    const b = document.body;
+    b.classList.remove('kb');
+    b.style.top = '0px';
+    b.style.bottom = 'auto';
+    // 本体はiPhoneが使わせてくれる高さぴったり（下の「ふた」には潜らない）
+    b.style.height = window.innerHeight + 'px';
+    // iOS 27：画面下に「ふた」がある時は、ふたがホームバーの場所を確保してくれるので余白を二重に取らない
+    const reserved = fullScreenH() - window.innerHeight;
+    b.classList.toggle('iosbar', reserved > 20);
+    window.scrollTo(0, 0);
+  }
   function fitToVisible(){
     const vv = window.visualViewport;
     if (!vv) return;
+    const ae = document.activeElement;
+    const typing = ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName);
+    // 入力していない時・キーボードが出ていない時は、調整を外して元の固定レイアウトに戻す
+    if (!typing || vv.height > window.innerHeight - 60){
+      resetFit();
+      return;
+    }
     const b = document.body;
+    b.classList.add('kb');
     b.style.top = vv.offsetTop + 'px';
     b.style.bottom = 'auto';
     b.style.height = vv.height + 'px';
@@ -3855,8 +3889,9 @@
   if (window.visualViewport){
     window.visualViewport.addEventListener('resize', fitToVisible);
     window.visualViewport.addEventListener('scroll', fitToVisible);
-    fitToVisible();
   }
+  resetFit();
+  window.addEventListener('resize', () => { if (!document.body.classList.contains('kb')) resetFit(); });
 
   inputEl.addEventListener('focus', () => {
     refreshCompact();
@@ -3867,8 +3902,16 @@
   });
   inputEl.addEventListener('blur', () => {
     kbStickBottom = false;
-    [0, 150, 400].forEach(ms => setTimeout(fitToVisible, ms));
+    // すぐに戻すと、押したボタンが指の下から逃げてしまうので少し待つ
+    [300, 600, 1000].forEach(ms => setTimeout(fitToVisible, ms));
   });
+  // 送信ボタンを押してもキーボードを閉じない（LINEと同じ）。入力欄から離れないのでボタンも動かない
+  sendBtn.addEventListener('mousedown', (e) => {
+    if (document.activeElement === inputEl) e.preventDefault();
+  });
+  // アプリに戻ってきた時・画面の向きが変わった時もリセット
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fitToVisible(); });
+  window.addEventListener('orientationchange', () => setTimeout(fitToVisible, 300));
   inputEl.addEventListener('blur', () => { toolsPinned = false; setTimeout(refreshCompact, 150); });
 
   inputEl.addEventListener('input', () => {
