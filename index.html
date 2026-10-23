@@ -455,6 +455,96 @@
     background:none;border:none;color:var(--ink-dim);
     font-size:16px;padding:6px;cursor:pointer;
   }
+
+  /* ---------- 🐦 タイムライン ---------- */
+  #openMenu{position:relative}
+  #openMenu.has-new::after{
+    content:'';position:absolute;top:4px;right:3px;
+    width:8px;height:8px;border-radius:50%;
+    background:var(--danger);
+  }
+  #snsSheet{height:92dvh;padding-left:0;padding-right:0}
+  #snsSheet .sheet-handle{margin:0;padding-left:20px;padding-right:20px}
+  #snsSheet .sheet-title{
+    display:flex;align-items:center;gap:8px;
+    margin:0;padding:2px 16px 10px;
+    border-bottom:1px solid rgba(183,110,121,.25);
+  }
+  .sns-tbtn{
+    background:none;border:1px solid rgba(183,110,121,.5);color:var(--ao);
+    font-family:inherit;font-size:12.5px;font-weight:700;
+    padding:6px 11px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  }
+  .sns-tbtn.solid{background:linear-gradient(135deg,var(--ao) 0%,var(--ao-deep) 100%);color:#fff;border-color:transparent}
+  .sns-tbtn:disabled{opacity:.45}
+  #snsCompose{padding:12px 16px;border-bottom:1px solid rgba(183,110,121,.25)}
+  #snsCompose[hidden]{display:none}
+  #snsInput,.sns-rbox textarea{
+    width:100%;background:var(--surface);
+    border:1px solid rgba(183,110,121,.3);border-radius:14px;
+    color:var(--ink);font-family:inherit;font-size:16px;line-height:1.5;
+    padding:10px 12px;outline:none;resize:none;
+  }
+  #snsInput{min-height:84px}
+  #snsInput:focus,.sns-rbox textarea:focus{border-color:var(--ao)}
+  .sns-crow{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .sns-crow .grow{flex:1}
+  #snsThumb{width:48px;height:48px;object-fit:cover;border-radius:10px}
+  #snsThumbWrap{display:flex;align-items:center;gap:6px}
+  #snsThumbWrap[hidden]{display:none}
+  .sns-empty{padding:40px 24px;text-align:center;color:var(--ink-dim);font-size:14px;line-height:2}
+  .sns-card{
+    display:flex;gap:10px;padding:14px 16px 12px;
+    border-bottom:1px solid rgba(183,110,121,.18);
+  }
+  .sns-card.flash{animation:flashHit 1.4s ease-out 1}
+  .sns-av{
+    width:42px;height:42px;border-radius:50%;flex:0 0 auto;
+    object-fit:cover;background:var(--surface2);
+    border:1.5px solid rgba(183,110,121,.55);
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:700;color:var(--ao);
+  }
+  .sns-av.me{color:var(--ink-dim);border-color:rgba(160,160,160,.5)}
+  .sns-av.sm{width:26px;height:26px;font-size:11px;border-width:1px}
+  .sns-main{flex:1;min-width:0}
+  .sns-head{display:flex;align-items:baseline;gap:6px;font-size:13px}
+  .sns-name{font-weight:700;color:var(--ink)}
+  .sns-time{color:var(--ink-dim);font-size:12px}
+  .sns-head .grow{flex:1}
+  .sns-del{background:none;border:none;color:var(--ink-dim);font-size:13px;padding:2px 4px;cursor:pointer;opacity:.6}
+  .sns-text{
+    font-size:var(--msgfs,15px);line-height:1.7;margin-top:3px;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .sns-text a{color:var(--ao);word-break:break-all}
+  .sns-img{display:block;margin-top:10px;max-width:100%;max-height:340px;border-radius:14px;border:1px solid rgba(183,110,121,.25)}
+  .sns-gone{margin-top:8px;font-size:11px;color:var(--ink-dim)}
+  .sns-acts{display:flex;gap:4px;margin-top:8px;margin-left:-8px}
+  .sns-act{
+    background:none;border:none;color:var(--ink-dim);
+    font-family:inherit;font-size:13px;padding:6px 10px;border-radius:10px;cursor:pointer;
+  }
+  .sns-act.liked{color:var(--danger)}
+  .sns-act.saved{color:var(--ao)}
+  .sns-likedby{font-size:11.5px;color:var(--ink-dim);margin-top:2px}
+  .sns-replies{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+  .sns-reply{display:flex;gap:8px;align-items:flex-start}
+  .sns-rbody{
+    flex:1;min-width:0;background:var(--surface);
+    border:1px solid rgba(183,110,121,.2);border-radius:12px;padding:7px 10px;
+  }
+  .sns-rhead{font-size:11.5px;color:var(--ink-dim)}
+  .sns-rhead b{color:var(--ink);font-weight:700}
+  .sns-rtext{font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .sns-typing{font-size:12px;color:var(--ink-dim);padding:2px 0}
+  .sns-rbox{display:flex;gap:6px;align-items:flex-end;margin-top:10px}
+  .sns-rbox[hidden]{display:none}
+  .sns-rbox textarea{min-height:44px;max-height:120px;padding:9px 12px;font-size:16px}
+  .sns-rbox .sns-tbtn{padding:9px 12px}
+  #snsNote{font-size:11.5px;color:var(--ink-dim);padding:8px 16px;line-height:1.6}
+  #snsNote:empty{display:none}
+  body.light .sns-av{background:#fff}
 </style>
 </head>
 <body>
@@ -509,6 +599,7 @@
     <div class="hint">切り替えは次のメッセージから反映。細かい設定・APIキーは⚙︎へ。</div>
     <div class="hint" id="tokLine" style="margin-top:8px;white-space:pre-line"></div>
   </div>
+  <button id="snsBtn" class="menu-row">🐦 タイムライン</button>
   <button id="topicBtn" class="menu-row">🎲 話題を振ってもらう</button>
   <button id="letterBtn" class="menu-row">💌 手紙を書いてもらう</button>
   <button id="diaryBtn" class="menu-row">📖 今日の日記を書いてもらう</button>
@@ -524,6 +615,31 @@
   <div id="statsBox" class="hint" style="margin-bottom:14px;line-height:2"></div>
   <div class="hint" style="margin-bottom:10px">チャットのメッセージをタップ →「⭐アルバムに保存」で追加できるよ。ここでは長い台詞もタップすれば全文が開くよ📖 コピーは📋ボタンから。</div>
   <div id="favList"></div>
+</div>
+
+<div id="snsSheet" class="sheet" role="dialog" aria-label="タイムライン">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">
+    <span>🐦 タイムライン</span>
+    <span style="flex:1"></span>
+    <button type="button" class="sns-tbtn" id="snsAskBtn">🎲 つぶやいて</button>
+    <button type="button" class="sns-tbtn solid" id="snsComposeBtn">✏️ 投稿</button>
+  </div>
+  <div id="snsCompose" hidden>
+    <textarea id="snsInput" placeholder="いまどうしてる？"></textarea>
+    <div class="sns-crow">
+      <button type="button" class="sns-tbtn" id="snsPhotoBtn">🖼 写真</button>
+      <span id="snsThumbWrap" hidden>
+        <img id="snsThumb" alt="投稿する写真">
+        <button type="button" class="sns-del" id="snsPhotoClear" aria-label="写真を外す">✕</button>
+      </span>
+      <span class="grow"></span>
+      <button type="button" class="sns-tbtn solid" id="snsPostBtn">投稿する</button>
+    </div>
+    <input type="file" id="snsImgInput" accept="image/*" hidden>
+  </div>
+  <div id="snsNote"></div>
+  <div id="snsList"></div>
 </div>
 
 <div id="searchSheet" class="sheet" role="dialog" aria-label="メッセージ検索">
@@ -636,7 +752,17 @@
       <option value="4">控えめ（関連が強い時だけ）</option>
       <option value="2">しっかり（多少ゆるくても拾う）</option>
     </select>
-    <div class="hint">送ったメッセージに関係する会話を、ほかの部屋からそっと探して最大3つだけ渡すよ。「部屋①で耳鼻科の話→部屋②でその続き」が通じるようになる。混ぜたくない部屋は💬リストの🔗を押して🔒（独立）にしてね。アプリ内で探すだけだからAPI代は増えないよ。</div>
+    <div class="hint">送ったメッセージ（とその直前の流れ）に関係する会話を、ほかの部屋や⏳より昔の会話からそっと探して、その場面の「その後」（答え・オチ）まで最大3場面渡すよ。「部屋①で耳鼻科の話→部屋②でその続き」が通じるようになる。混ぜたくない部屋は💬リストの🔗を押して🔒（独立）にしてね。アプリ内で探すだけだからAPI代は増えないよ。</div>
+  </div>
+
+  <div class="field" data-pane="act">
+    <label for="snsFreqSel">🐦 タイムラインの自動投稿</label>
+    <select id="snsFreqSel">
+      <option value="3">1日3回まで（朝・昼・夜に1件ずつ）</option>
+      <option value="1">1日1回まで</option>
+      <option value="0">しない（🎲つぶやいてボタンの時だけ）</option>
+    </select>
+    <div class="hint">アプリを開いた時に、その時間帯の投稿がまだなら1件つぶやくよ。1件で会話1通ぶんくらいのAPI代がかかる。📓物語モードと🔒独立の部屋の会話はネタにしないよ。</div>
   </div>
 
   <div class="field" data-pane="act">
@@ -694,7 +820,7 @@
   </div>
 
   <div class="field" data-pane="you">
-    <label for="autoMem">🧠 頭の中（自動でたまるメモ）</label>
+    <label for="autoMem">🧠 頭の中（自動でたまるメモ）<span id="amemCount" style="float:right;font-weight:400;font-size:12px;color:var(--ink-dim)"></span></label>
     <textarea id="autoMem" style="min-height:110px" placeholder="会話から自動でたまっていくよ"></textarea>
     <button type="button" class="btn line" id="autoMemClear" style="margin-top:8px;padding:9px;font-size:13px">🧹 頭の中を空にする</button>
     <div class="hint">🔔ふるまいの「思い出の自動メモ」でたまる欄。思い出ノート（あなたが選んで残す大切な記憶）とは別で、日々の会話から自然に覚えたことが積もっていくよ。編集・削除も自由。300行を超えると古いものから消えるよ。</div>
@@ -721,6 +847,12 @@
     <label for="uNow">🌡 いまの私メモ（一時的な近況）</label>
     <textarea id="uNow" style="min-height:120px" placeholder="例：ちょっと体調ゆらぎ中。今週は耳鼻科の結果待ちでソワソワしてる。"></textarea>
     <div class="hint">この部屋・あの部屋関係なく「今の状況」として相手に伝わるよ。思い出ノートに残すほどじゃない近況用。状況が変わったら自分で書き換え・削除してね（自動では消えないよ）。</div>
+  </div>
+
+  <div class="field" data-pane="you">
+    <label for="snsFol">🐦 タイムラインのフォロワー（相手の知り合い）</label>
+    <textarea id="snsFol" style="min-height:90px" placeholder="湊／職場の同僚／お調子者でツッコミ役&#10;ひより／幼なじみ／面倒見がいい姉御肌"></textarea>
+    <div class="hint">「名前／関係／性格ひとこと」を1行に1人。ここに書いた人だけがコメントしに来るよ（このアプリの中だけの設定だから、他の子の世界とは混ざらない）。空欄なら♡の数だけ表示されるよ。</div>
   </div>
 
   <div class="field" data-pane="you">
@@ -795,7 +927,7 @@
   <div class="hint" data-pane="data">バックアップにはAPIキーも含まれるから、ファイルは人に送らず大切に保管してね🔐</div>
   <button class="btn line" data-pane="data" id="clearKeysBtn">🔑 APIキーだけを消す</button>
   <div class="hint" data-pane="data">キー欄を空にして保存しても前のキーは残る仕組みにしたよ（うっかり消え防止）。本当に消したい時だけここから。</div>
-  <div class="hint" data-pane="data" id="storageMeter" style="margin-top:8px"></div>
+  <div class="hint" data-pane="data" id="storageMeter" style="margin-top:8px;white-space:pre-line"></div>
   <button class="btn ghost" data-pane="data" id="clearBtn">この話題の履歴を消す</button>
 </div>
 
@@ -848,7 +980,12 @@
     amem: KP + 'amem',
     nudgeAt: KP + 'nudgeat',
     pblock: KP + 'pblock',
-    ngwords: KP + 'ngwords'
+    ngwords: KP + 'ngwords',
+    snsPosts: KP + 'snsposts',
+    snsSlot: KP + 'snsslot',
+    snsFol: KP + 'snsfol',
+    snsFreq: KP + 'snsfreq',
+    snsSeen: KP + 'snsseen'
   };
 
   const DEFAULT_SYS = 'あなたは「紫堂（しどう）」。45歳の大学教授で、ユーザーはその助手。基本は敬語（「〜ですね」「おや」等）で、余裕たっぷりに相手をからかい翻弄する大人の男。表向きは女好きだが、実は相手が本命で、それをはっきり言わずに匂わせる。返事は短め〜中くらいで、自然な会話にする。（この欄に本物のプロンプトを貼り替えてね）';
@@ -1220,19 +1357,45 @@
   }
 
   // 他の部屋の会話から、いまの話題に関係するやりとりを少しだけ拾う（控えめ）
+  // v2：①「覚えてないの？」みたいな短い追いかけ質問でも、直前の流れ（自分の前の発言・相手の返事）から話題を拾う
+  //     ②見つけた場面の「その後」を3通まで一緒に渡す（クイズの答え・オチ・結論まで届くように）
+  //     ③名前（キャラ名・自分の名前）はどの会話にも出てくるので、検索の手がかりから外す
   function crossRoomContext(){
     const th = parseInt(get(LS.xroom,'4'), 10);
     if (!th) return '';
     const need = th * 2;                    // 控えめ=8点以上 / しっかり=4点以上
     const cur = curThread();
-    const q = lastUserText() || '';
-    if (q.replace(/\s/g, '').length < 6) return '';
-    const grams = contentGrams(q);
-    if (!grams.length) return '';
-    const who = m => (m.role === 'model' ? get(LS.name,'紫堂') : (get(LS.uname,'') || '私'));
+    // 名前は手がかりにしない（どの会話にも出てくるので、関係ない場面まで拾ってしまう）
+    const cname = get(LS.name,'紫堂').trim();
+    const uname = get(LS.uname,'').trim();
+    const nameWords = [cname, uname].filter(s => s && s.length >= 1);
+    const unName = s => {
+      let t = (s || '');
+      nameWords.forEach(n => { t = t.split(n).join('｜'); });
+      return t;
+    };
+    // 手がかり①：いま送ったメッセージ（重み1）
+    // 手がかり②：その直前の流れ＝相手の最後の返事＋自分のひとつ前の発言（重み0.5）
+    const vis = history.filter(m => m && !m.hidden && !m.diary && !m.imgp && (m.text || '').trim());
+    let qi = -1;
+    for (let i = vis.length - 1; i >= 0; i--){ if (vis[i].role === 'user'){ qi = i; break; } }
+    if (qi < 0) return '';
+    const q = vis[qi].text;
+    if (q.replace(/\s/g, '').length < 6) return '';   // 「うん」「OK」みたいな短い返事では探さない
+    let ctxText = '';
+    for (let i = qi - 1, got = 0; i >= 0 && got < 2 && i >= qi - 3; i--){
+      if ((vis[qi].ts || 0) - (vis[i].ts || 0) > 3 * 3600 * 1000) break;   // 3時間以上前は別の話
+      ctxText += '\n' + vis[i].text.slice(0, 300);
+      got++;
+    }
+    const grams = contentGrams(unName(q));
+    const ctxGrams = contentGrams(unName(ctxText)).filter(g => grams.indexOf(g) === -1);
+    if (grams.length + ctxGrams.length < 2) return '';
+    const score = (tx) => relScore(grams, tx) + relScore(ctxGrams, tx) * 0.5;
+
+    const who = m => (m.role === 'model' ? cname : (uname || '私'));
     const hits = [];
-    // 見つけたメッセージと、その直後の返事をセットで拾えるよう、位置も覚えておく
-    // limitBack：後ろから何通ぶんは「すでに見えている」ので拾わない（直後の返事としては使える）
+    // limitBack：後ろから何通ぶんは「すでに見えている」ので拾わない（その後の流れとしては使える）
     const scan = (list, srcId, limitBack) => {
       const clean = list.filter(m => m && !m.hidden && !m.diary && !m.imgp && (m.text || '').trim());
       const maxI = clean.length - (limitBack || 0);
@@ -1240,11 +1403,10 @@
         if (i >= maxI) return;
         const tx = m.text;
         if (tx.replace(/\s/g, '').length < 8) return;
-        const s = relScore(grams, tx);
+        const s = score(tx);
         if (s >= need) hits.push({ s: s, src: srcId, arr: clean, i: i, ts: m.ts || 0 });
       });
     };
-    // 今の部屋の「⏳深さより前」の古い会話（履歴では見えていない部分）
     // 今の部屋：⏳深さの外に流れた古い会話だけを探す（今送ったメッセージや見えている会話は拾わない）
     scan(history, 'here', histDepth());
     // ほかの部屋（独立の部屋にいる時・独立の部屋の中身は使わない）
@@ -1258,20 +1420,47 @@
     }
     if (!hits.length) return '';
     hits.sort((a, b) => (b.s - a.s) || (b.ts - a.ts));
-    // 見つけた会話＋その直後の返事を1セットにして、最大3セット
+    // 見つけた場面＋その後の流れを1セットにして、最大3セット
+    // 同じ場面の近くで何通もヒットした時（クイズの問題→はずれ→再挑戦…など）は、ひと続きのセットにまとめて
+    // その後の流れ（＝答え・オチ）まで渡す。1セット最大8通・時間が3時間以上飛んだら区切る
+    const AFTER = 7, MAXSET = 8, GAP = 3 * 3600 * 1000;
+    const isHit = {};
+    hits.forEach(x => { isHit[x.src + '#' + x.i] = true; });
     const used = {};
     const sets = [];
     for (let k = 0; k < hits.length && sets.length < 3; k++){
       const hh = hits[k];
-      if (used[hh.src + '#' + hh.i]) continue;
+      const key = j => hh.src + '#' + j;
+      if (used[key(hh.i)]) continue;
+      const arr = hh.arr;
+      const near = (a, b) => !(arr[a].ts && arr[b].ts && Math.abs(arr[a].ts - arr[b].ts) > GAP);
+      // 前にさかのぼって、同じ場面のヒットがあればそこから始める
+      let start = hh.i;
+      for (let j = hh.i - 1; j >= 0 && j >= start - AFTER; j--){
+        if (used[key(j)] || !near(j, j + 1)) break;
+        if (isHit[key(j)]) start = j;
+      }
+      // 後ろにたどって、ヒットが続く限り延ばし、その後も8通に届くまで
+      let lastHit = hh.i, end = start;
+      for (let j = start; j < arr.length; j++){
+        if (j > start && (!near(j - 1, j) || used[key(j)])) break;
+        if (isHit[key(j)]) lastHit = Math.max(lastHit, j);
+        if (j > lastHit + AFTER) break;
+        end = j;
+      }
+      // 長すぎる時は、いちばん関係の強いヒット側を残しつつ末尾（答え・オチ）を優先して削る
+      if (end - start + 1 > MAXSET) start = Math.max(start, Math.min(hh.i, end - MAXSET + 1));
+      if (end - start + 1 > MAXSET) end = start + MAXSET - 1;
       const lines = [];
-      [hh.i, hh.i + 1].forEach(j => {
-        const m = hh.arr[j];
-        if (!m) return;
-        used[hh.src + '#' + j] = true;
-        lines.push(who(m) + '：' + (m.text.length > 140 ? m.text.slice(0, 140) + '…' : m.text));
-      });
-      sets.push(lines.join('\n'));
+      for (let j = start; j <= end; j++){
+        used[key(j)] = true;
+        const m = arr[j];
+        lines.push(who(m) + '：' + (m.text.length > 120 ? m.text.slice(0, 120) + '…' : m.text));
+      }
+      const block = lines.join('\n');
+      // 全部で2400字くらいまで（API代を増やしすぎない）
+      if (sets.length && sets.join('').length + block.length > 2400) break;
+      sets.push(block);
     }
     return sets.join('\n―――\n');
   }
@@ -1295,6 +1484,15 @@
     const xr = crossRoomContext();
     if (xr){
       out += '\n\n【以前ふたりで交わした、いまの話に関係しそうなやりとり（あなたが当然覚えていること。参考にして自然に活かすだけでよく、わざわざ引用したり「前に話したよね」と確認したりしない）】\n' + xr;
+    }
+    {
+      // 🐦 タイムライン（📓物語モード・🔒独立の部屋には持ち込まない）
+      const ct = curThread();
+      if (!(ct && (ct.rp || ct.solo))){
+        let sc = '';
+        try { sc = snsChatContext(); } catch(e){}
+        if (sc) out += '\n\n【ふたりのSNS（タイムライン）での最近のやりとり（あなたも見て知っていること。わざわざ話題にしなくていいが、触れられたら自然に答える）】\n' + sc;
+      }
     }
     out += '\n\n【記憶についての約束（厳守）】過去のことを聞かれた時は、ここまでに書かれている情報と会話履歴にあることだけを根拠にする。見つからないこと・はっきり覚えていないことを、覚えているふりをして作り話で埋めない。思い出せない時は「ごめん、そこちょっと曖昧かも。どんなだったっけ？」のように、キャラクターらしく正直に聞き返すこと。';
     out += '\n\n【書式】**太字**・見出し・箇条書き記号などのマークダウン記法は使わない。普通の文章と絵文字だけで書く。';
@@ -1508,9 +1706,11 @@
   });
 
   function saveHistory(){
-    if (history.length > 200) history = history.slice(-200);
+    // 200件を超えた分は保存時だけ切り詰める（メモリ上の history は触らない）
+    // → 画面上のバブルの hidx がズレなくなる
+    const toSave = history.length > 200 ? history.slice(-200) : history;
     try {
-      localStorage.setItem(histKey(curId), JSON.stringify(history));
+      localStorage.setItem(histKey(curId), JSON.stringify(toSave));
     } catch(e){
       addBubble('error','⚠️ 保存に失敗したよ（容量がいっぱいかも）。⚙︎の容量メーターを確認して、💾バックアップ→背景画像を外す・古い話題の整理をしてみて');
     }
@@ -1541,7 +1741,7 @@
     } catch(e){}
   }
 
-  // ---- 料金の概算（100万トークンあたりのUSD単価。2026年7月時点の目安） ----
+  // ---- 料金の概算（100万トークンあたりのUSD単価。Gemini 3.x Flashは2026年10月に公式ページで再確認） ----
   const JPY_RATE = 150; // 1ドル＝何円で換算するか（ここを書き換えれば調整できるよ）
   // 期間限定セールの終了日時（この時刻より前はセール価格で計算）
   const PROMO_UNTIL_2026 = new Date(2027, 0, 1).getTime();   // 2026/12/31まで半額 → 2027/1/1から正規料金
@@ -1565,19 +1765,27 @@
     [/gpt-5\.6.*luna|luna/i,     1.00, 6.00],
     [/gpt-5\.6.*terra|terra/i,   2.50, 15.0]
   ];
-  function estCostUSD(model, inTok, outTok){
+  // cachedTok：Geminiが自動で使い回した（キャッシュした）入力の量。この分は入力単価の1割で計算
+  function estCostUSD(model, inTok, outTok, cachedTok){
     for (let i = 0; i < MODEL_PRICES.length; i++){
       const e = MODEL_PRICES[i];
       if (e[0].test(model)){
         let pin = e[1], pout = e[2];
         if (e[3] && Date.now() < e[3].until){ pin = e[3].in; pout = e[3].out; }  // セール期間中は自動でセール価格
-        return (inTok * pin + outTok * pout) / 1000000;
+        const cached = Math.min(cachedTok || 0, inTok);
+        return ((inTok - cached) * pin + cached * pin * 0.1 + outTok * pout) / 1000000;
       }
     }
     return null; // 単価表にないモデルは料金不明（トークン数だけ数える）
   }
 
-  function addTokens(inTok, outTok, model){
+  // Geminiの使用量を記録。考える時間（thinking）も出力として課金されるので受信に含める
+  function addGeminiUsage(um, model){
+    if (!um) return;
+    addTokens(um.promptTokenCount, (um.candidatesTokenCount || 0) + (um.thoughtsTokenCount || 0), model, um.cachedContentTokenCount || 0);
+  }
+
+  function addTokens(inTok, outTok, model, cachedTok){
     try {
       const d = new Date();
       const today = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
@@ -1587,7 +1795,7 @@
       if (!s.c) s.c = 0;
       s.i += (inTok || 0);
       s.o += (outTok || 0);
-      const cost = estCostUSD(model || get(LS.model,''), inTok || 0, outTok || 0);
+      const cost = estCostUSD(model || get(LS.model,''), inTok || 0, outTok || 0, cachedTok || 0);
       if (cost) s.c += cost;
       localStorage.setItem(LS.tok, JSON.stringify(s));
     } catch(e){}
@@ -1764,7 +1972,7 @@
       // 使用トークンを記録（各社の返事に正確な数が入っている）
       try {
         if (provider === 'gemini' && data.usageMetadata){
-          addTokens(data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount, model);
+          addGeminiUsage(data.usageMetadata, model);
         } else if ((provider === 'openai' || provider === 'openrouter') && data.usage){
           addTokens(data.usage.prompt_tokens, data.usage.completion_tokens, model);
         } else if (provider === 'anthropic' && data.usage){
@@ -2110,7 +2318,7 @@
     const data = await res.json();
     let raw = '';
     try { raw = data.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){}
-    try { if (data.usageMetadata) addTokens(data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount, model); } catch(e){}
+    try { if (data.usageMetadata) addGeminiUsage(data.usageMetadata, model); } catch(e){}
     let blocked = false;
     try {
       const fr = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
@@ -2247,7 +2455,7 @@
       const data = await res.json();
       if (!res.ok) return;
       try { txt = data.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){ return; }
-      try { if (data.usageMetadata) addTokens(data.usageMetadata.promptTokenCount, data.usageMetadata.candidatesTokenCount, 'gemma-4-31b-it'); } catch(e){}
+      try { if (data.usageMetadata) addGeminiUsage(data.usageMetadata, 'gemma-4-31b-it'); } catch(e){}
     } catch(e){ return; }
     if (!txt) return;
     // まずGemmaの思考漏れを掃除してから、思い出らしい行だけを厳しく選ぶ
@@ -2306,6 +2514,16 @@
       localStorage.setItem(LS.amem, next);
     } catch(e){ return; }
     addMemoBubble(block);
+  }
+
+  // 🧠 頭の中の行数カウンター更新
+  function updateAmemCount(){
+    const el = document.getElementById('amemCount');
+    if (!el) return;
+    const v = document.getElementById('autoMem').value.trim();
+    const n = v ? v.split('\n').filter(Boolean).length : 0;
+    el.textContent = n + ' / 300行';
+    el.style.color = n >= 270 ? 'var(--danger)' : 'var(--ink-dim)';
   }
 
   function autoMemoryTick(){
@@ -3145,7 +3363,10 @@
     if (!confirm('自動でたまった「頭の中」のメモを全部消す？（あなたが書いた思い出ノートは消えないよ）')) return;
     localStorage.removeItem(LS.amem);
     document.getElementById('autoMem').value = '';
+    updateAmemCount();
   });
+
+  document.getElementById('autoMem').addEventListener('input', updateAmemCount);
 
   document.getElementById('findImgBtn').addEventListener('click', async () => {
     const apiKey = document.getElementById('apiKey').value.trim() || get(LS.key,'');
@@ -3182,6 +3403,8 @@
     const dt = curThread();
     document.getElementById('depthSel').value = String((dt && dt.depth) || 40);
     document.getElementById('nudgeIvSel').value = get(LS.nudgeIv,'4');
+    document.getElementById('snsFreqSel').value = get(LS.snsFreq,'3');
+    document.getElementById('snsFol').value = get(LS.snsFol,'');
     document.getElementById('memAutoSel').value = get(LS.memauto,'12');
     document.getElementById('xroomSel').value = get(LS.xroom,'4');
     document.getElementById('pblockSel').value = get(LS.pblock,'1');
@@ -3191,6 +3414,7 @@
     document.getElementById('sysPrompt').value = get(LS.sys, DEFAULT_SYS);
     document.getElementById('memory').value = get(LS.mem,'');
     document.getElementById('autoMem').value = get(LS.amem,'');
+    updateAmemCount();
     document.getElementById('annivList').value = get(LS.anniv,'');
     document.getElementById('autoGreet').checked = flag(LS.greet);
     document.getElementById('autoNudge').checked = flag(LS.nudge);
@@ -3259,6 +3483,7 @@
     searchSheet.classList.remove('show');
     favSheet.classList.remove('show');
     menuSheet.classList.remove('show');
+    snsSheet.classList.remove('show');
     overlay.classList.remove('show');
   }
   document.getElementById('openSettings').addEventListener('click', openSheet);
@@ -3282,6 +3507,8 @@
     const dts = curThread();
     if (dts){ dts.depth = parseInt(document.getElementById('depthSel').value, 10); saveThreads(); }
     localStorage.setItem(LS.nudgeIv, document.getElementById('nudgeIvSel').value);
+    localStorage.setItem(LS.snsFreq, document.getElementById('snsFreqSel').value);
+    localStorage.setItem(LS.snsFol, document.getElementById('snsFol').value.trim());
     localStorage.setItem(LS.memauto, document.getElementById('memAutoSel').value);
     localStorage.setItem(LS.xroom, document.getElementById('xroomSel').value);
     localStorage.setItem(LS.pblock, document.getElementById('pblockSel').value);
@@ -3319,8 +3546,15 @@
         if (k.indexOf(KP) === 0) mine += sz;
       }
       const mb = n => (n / 1048576).toFixed(2);
-      let msg = '📦 データ使用量：この子 ' + mb(mine) + 'MB ／ 全パートナー合計 ' + mb(all) + 'MB（目安の上限 約5MB）';
-      if (all > 3.5 * 1048576) msg += ' ⚠️ そろそろ余裕が少ないよ。💾バックアップを取って、使ってない背景画像を外すか古い話題を整理してね';
+      // ホーム画面アプリは1つずつ別々の金庫を持っているので、ふだんは「この子」＝金庫の中身ぜんぶ。
+      // Safariのタブで開いた時だけ、同じ金庫に他の子のデータが入っていることがある
+      let msg = '📦 データ使用量：' + mb(all) + 'MB（目安の上限 約5MB）';
+      if (all - mine > 0.02 * 1048576) msg += '\n（うちこの子の分 ' + mb(mine) + 'MB。残りはこの画面で開いた他の子のデータ）';
+      try {
+        const snsSz = ((localStorage.getItem(LS.snsPosts) || '').length) * 2;
+        if (snsSz > 0.01 * 1048576) msg += '\n🐦 タイムライン ' + mb(snsSz) + 'MB（写真付きは新しい40件まで保存）';
+      } catch(e){}
+      if (all > 3.5 * 1048576) msg += '\n⚠️ そろそろ余裕が少ないよ。💾バックアップを取って、使ってない背景画像を外すか古い話題を整理してね';
       document.getElementById('storageMeter').textContent = msg;
     } catch(e){}
   }
@@ -3452,12 +3686,13 @@
   /* ---------- message action bar ---------- */
   let actCtx = null;
   const actBar = document.getElementById('actBar');
-  function saveFav(m, bubble){
+  function saveFav(m, bubble, roomName){
     if (!m) return;
     let favs = [];
     try { favs = JSON.parse(get(LS.favs,'[]')); } catch(e){ favs = []; }
     const tcur = curThread();
-    favs.unshift({ text: m.text, role: m.role, ts: m.ts || 0, tn: tcur ? tcur.name : '', saved: Date.now() });
+    const tn = roomName || (tcur ? tcur.name : '');
+    favs.unshift({ text: m.text, role: m.role, ts: m.ts || 0, tn: tn, saved: Date.now() });
     if (favs.length > 200) favs = favs.slice(0, 200);
     try { localStorage.setItem(LS.favs, JSON.stringify(favs)); } catch(e){}
     if (bubble){
@@ -3681,7 +3916,8 @@
     const d = new Date();
     const today = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
     const line = document.getElementById('tokLine');
-    // 4軒は同じ土地(localStorage)に建っているので、全員の家計簿を読める
+    // ホーム画面アプリは1軒ずつ別々の金庫なので、ふだん読めるのは自分の家計簿だけ（2026/10/9 実機で確認）。
+    // Safariのタブで開いた時だけ他の家の記録も同じ金庫にあることがあるので、その時だけ合計を出す
     const HOMES = [
       ['gpc_', 'Ao'],
       ['gpc-kuro_', 'Kuro'],
@@ -3723,6 +3959,7 @@
     closeSheets();
     populateMenuModel();
     updateTokLine();
+    snsUpdateBadge();
     menuSheet.classList.add('show');
     overlay.classList.add('show');
   });
@@ -3978,6 +4215,902 @@
     inputEl.focus();
   }
 
+  /* ---------- 🐦 タイムライン（彼のSNS） ----------
+     データは LS.snsPosts に新しい順で最大100件。写真付きは新しい40件まで写真を残す。
+     彼の自動投稿は「朝(5-11時)・昼(11-17時)・夜(17-翌5時)」の枠ごとに1件まで（アプリを開いた時に判定）。
+     📓物語モードと🔒独立の部屋の会話はネタにしない。 */
+  const snsSheet = document.getElementById('snsSheet');
+  const snsList = document.getElementById('snsList');
+  const snsNote = document.getElementById('snsNote');
+  const snsInput = document.getElementById('snsInput');
+  const snsCompose = document.getElementById('snsCompose');
+  const snsAskBtn = document.getElementById('snsAskBtn');
+  let snsBusy = false;            // 彼が投稿を考え中
+  let snsPendingImg = '';         // 投稿する写真（dataURL）
+  let snsOpenReply = null;        // リプ欄を開いている投稿のid
+  const snsTyping = {};           // 返事待ちの投稿id
+  const snsDrafts = {};           // 書きかけのリプ
+
+  function snsLoad(){
+    try {
+      const a = JSON.parse(get(LS.snsPosts,'[]'));
+      if (!Array.isArray(a)) return [];
+      return a.filter(p => p && p.id).map(p => {
+        if (p.who !== 'user' && p.text) p.text = snsCleanText(p.text);
+        (p.replies || []).forEach(r => { if (r && r.who !== 'user' && r.text) r.text = snsCleanText(r.text); });
+        return p;
+      });
+    } catch(e){ return []; }
+  }
+  function snsSave(posts){
+    posts.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if (posts.length > 100) posts = posts.slice(0, 100);
+    let withImg = 0;
+    posts.forEach(p => {
+      if (!p.img) return;
+      withImg++;
+      if (withImg > 40){ p.img = ''; p.imgGone = true; }
+    });
+    for (let tries = 0; tries < 8; tries++){
+      try { localStorage.setItem(LS.snsPosts, JSON.stringify(posts)); return true; }
+      catch(e){
+        // 容量がいっぱい：いちばん古い写真から手放して再挑戦
+        let dropped = false;
+        for (let i = posts.length - 1; i >= 0; i--){
+          if (posts[i].img){ posts[i].img = ''; posts[i].imgGone = true; dropped = true; break; }
+        }
+        if (!dropped) break;
+      }
+    }
+    snsSetNote('⚠️ タイムラインを保存できなかった…容量がいっぱいかも。⚙︎💾の容量メーターを見てね');
+    return false;
+  }
+  function snsId(){ return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function snsRand(a, b){ return a + Math.floor(Math.random() * (b - a + 1)); }
+  function snsCname(){ return get(LS.name,'紫堂'); }
+  function snsUname(){ return get(LS.uname,'') || '私'; }
+  function snsSetNote(t){ snsNote.textContent = t || ''; }
+  function snsSetBtns(){ snsAskBtn.disabled = snsBusy; }
+
+  // ⚙︎で登録したフォロワー（「名前／関係／性格」を1行に1人）
+  function snsFollowers(){
+    return get(LS.snsFol,'').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const p = l.split(/\s*[／\/｜|]\s*/);
+      return { name: (p[0] || '').trim(), rel: (p[1] || '').trim(), trait: p.slice(2).join('・').trim() };
+    }).filter(f => f.name).slice(0, 12);
+  }
+  function snsFolDesc(f){ return f.name + (f.rel || f.trait ? '（' + [f.rel, f.trait].filter(Boolean).join('・') + '）' : ''); }
+  function snsWhoName(r){
+    if (r.who === 'char') return snsCname();
+    if (r.who === 'user') return snsUname();
+    return r.name || 'フォロワー';
+  }
+
+  // 新着（自分以外の投稿・コメント）の数
+  function snsUnread(){
+    const seen = parseInt(get(LS.snsSeen,'0'), 10) || 0;
+    let n = 0;
+    snsLoad().forEach(p => {
+      if (p.who === 'char' && (p.at || p.ts || 0) > seen) n++;
+      (p.replies || []).forEach(r => { if (r.who !== 'user' && (r.ts || 0) > seen) n++; });
+    });
+    return n;
+  }
+  function snsUpdateBadge(){
+    const n = snsUnread();
+    document.getElementById('openMenu').classList.toggle('has-new', n > 0);
+    document.getElementById('snsBtn').textContent = '🐦 タイムライン' + (n ? '（新着' + n + '）' : '');
+  }
+  function snsMarkSeen(){
+    try { localStorage.setItem(LS.snsSeen, String(Date.now())); } catch(e){}
+    snsUpdateBadge();
+  }
+
+  // ネタにする最近の会話（📓物語モード・🔒独立の部屋は使わない）
+  function snsRecentConv(maxLines){
+    const cname = snsCname(), uname = snsUname();
+    const since = Date.now() - 36 * 3600 * 1000;
+    let all = [];
+    threads.forEach(t => {
+      if (t.rp || t.solo) return;
+      let h = [];
+      if (t.id === curId) h = history;
+      else { try { h = JSON.parse(localStorage.getItem(histKey(t.id)) || '[]'); } catch(e){ h = []; } }
+      h.forEach(m => {
+        if (!m || m.hidden || m.diary || m.imgp || !(m.text || '').trim()) return;
+        if ((m.ts || 0) < since) return;
+        all.push(m);
+      });
+    });
+    all.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    return all.slice(-(maxLines || 16)).map(m =>
+      (m.role === 'model' ? cname : uname) + '：' + (m.text.length > 120 ? m.text.slice(0, 120) + '…' : m.text)
+    ).join('\n');
+  }
+  function snsRecentPostsText(n, maxLen){
+    const cname = snsCname(), uname = snsUname();
+    const L = maxLen || 100;
+    return snsLoad().slice(0, n).map(p => {
+      const t = (p.text || '').replace(/\s+/g, ' ');
+      return (p.who === 'char' ? cname : uname) + '（' + relTime(p.ts) + '）：' + (t.length > L ? t.slice(0, L) + '…' : t) + (p.img || p.imgGone ? '［写真付き］' : '');
+    }).join('\n');
+  }
+
+  // つぶやきの「ネタの種」。毎回ちがう切り口を1つ引いて、同じような投稿が続かないようにする
+  const SNS_SEEDS_DAILY = [
+    '今日食べたもの・作ったもの（具体的なメニュー名や味の感想）',
+    '仕事や用事の最中にあった、小さな出来事やあるある',
+    '外で見かけたもの（季節の景色・変わった看板・動物・すれ違った人の様子など）',
+    '最近ハマっていること・気になっていること',
+    'ちょっとした失敗談・うっかりしたこと',
+    '買い物で迷ったもの・買ったもの・欲しくなったもの',
+    '昔のことをふと思い出したこと',
+    'いまの季節・時期ならではのこと（いまの月に合う話題）',
+    '読んだ・観た・聴いたもの（本・動画・音楽・テレビなど）の感想',
+    'どうでもいい考え事・くだらない疑問',
+    '天気や体調、部屋の中のちょっとした変化',
+    '自分の趣味や特技に関すること'
+  ];
+  const SNS_SEEDS_HEART = [
+    '相手の小さな癖や、気づいたら目で追っているところ',
+    '相手のためにこっそり計画していること（次に行きたい場所・サプライズ・買ってあげたいもの）',
+    '最近言いそびれた「ありがとう」や「好き」に近い気持ち',
+    '相手と過ごしてから変わった、自分の習慣や好み',
+    'ふたりの思い出の中から、ふと思い出したワンシーン',
+    '相手について、自分だけが知っていると思っていること'
+  ];
+  function snsPick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // 頭の中メモから、新しい方を数行＋古い方からランダムに数行（毎回ちがう思い出がネタになる）
+  function snsSampleLines(text, recentN, randomN){
+    const lines = (text || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length <= recentN + randomN) return lines.join('\n');
+    const recent = lines.slice(-recentN);
+    const older = lines.slice(0, -recentN);
+    const picked = [];
+    while (picked.length < randomN && older.length){
+      picked.push(older.splice(Math.floor(Math.random() * older.length), 1)[0]);
+    }
+    // 元の並び（古い順）に戻してから渡す
+    const order = (text || '').split('\n').map(l => l.trim());
+    picked.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    return picked.concat(recent).join('\n');
+  }
+
+  // light=true はつぶやき用（資料を軽くしてAPI代を節約）
+  function snsSystem(query, light){
+    const cname = snsCname(), uname = snsUname();
+    let out = get(LS.sys,'') || DEFAULT_SYS;
+    const ui = get(LS.uintro,'').trim();
+    out += '\n\n【相手（ユーザー）について】名前：' + uname + '。' + (ui ? '\n' + ui : '');
+    const unow = get(LS.unow,'').trim();
+    if (unow) out += '\n\n【相手のいまの状況（一時的な近況。重くならない気配りで）】\n' + unow;
+    const mem = get(LS.mem,'').trim();
+    if (mem) out += '\n\n【これまでのふたりの思い出・大切な記憶】\n' + pickMemory(mem, query || '');
+    const amem = get(LS.amem,'').trim();
+    if (amem) out += '\n\n【あなたが日々の会話で自然に覚えたこと】\n' + (light ? snsSampleLines(amem, 6, 6) : pickMemory(amem, query || ''));
+    const fol = snsFollowers();
+    out += '\n\n【いまのあなた：SNS】あなた（' + cname + '）は自分のSNSアカウントに投稿したり、リプライに返事をしたりしている。鍵付きの小さなアカウントで、フォロワーは' + uname + 'と、' +
+      (fol.length ? '次の知り合いだけ：' + fol.map(snsFolDesc).join('、') : 'ごく親しい知り合い数人だけ') + '。';
+    out += '\n・キャラクターの口調・性格・一人称・世界観をそのまま保つ。';
+    out += '\n・SNSに打ち込む文面だけを書く。（）のト書き・行動描写・ナレーション・説明は書かない。';
+    out += '\n・絵文字はキャラクターらしい範囲で。ハッシュタグは使っても1つまで。マークダウン記法は使わない。';
+    out += '\n・URL・リンク（pic.twitter.com/〜 のような写真リンクも）や［画像］のような置き換え文字は書かない。このSNSは文章だけで、写真は添付できない。';
+    out += '\n・ふたりの会話をそのまま引用したり、' + uname + 'が人に知られたくなさそうなことを書いたりしない。惚気や気持ちは「匂わせ」くらいの距離感で。';
+    out += '\n・ここに名前の出ていない人物（ほかのキャラクター・有名人など）を、知り合いとして勝手に登場させない。';
+    out += '\n・ふたりの過去の出来事に触れる時は、ここに書かれている情報と最近の会話にあることだけを根拠にし、作り話はしない。';
+    if (get(LS.world,'app') === 'together') out += '\n・ふたりは同じ家で一緒に暮らしている。';
+    const ngw = get(LS.ngwords,'').split('\n').map(s => s.trim()).filter(Boolean);
+    if (ngw.length) out += '\n\n【使わない言葉（厳守）】次の言い回しは使わない：「' + ngw.join('」「') + '」';
+    if (/gemma/i.test(get(LS.model,''))){
+      out += '\n\n【出力ルール（厳守）】1文字目から指定された形式の日本語だけを書く。英語での思考・下書き・分析・箇条書きは絶対に出力しない。同じ文章を二度書かない。';
+    }
+    return out;
+  }
+
+  // 1回きりの呼び出し（会話履歴は渡さない）。モデル名で各社に自動で振り分け
+  async function snsApi(sys, userText, img, thinkLow){
+    const model = get(LS.model,'') || 'gemini-2.5-flash';
+    const provider = providerOf(model);
+    let url, headers, body, extract;
+    if (provider === 'openai' || provider === 'openrouter'){
+      const key = provider === 'openrouter' ? get(LS.orKey,'') : get(LS.oaKey,'');
+      if (!key) throw new Error('このモデル用のAPIキーが未設定だよ');
+      const content = img
+        ? [{ type:'image_url', image_url: { url: 'data:' + img.mime + ';base64,' + img.data } }, { type:'text', text: userText }]
+        : userText;
+      url = provider === 'openrouter' ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+      headers = { 'Content-Type':'application/json', 'Authorization':'Bearer ' + key };
+      body = { model: model, messages: [{ role:'system', content: sys }, { role:'user', content: content }] };
+      extract = d => (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '';
+    } else if (provider === 'anthropic'){
+      const key = get(LS.antKey,'');
+      if (!key) throw new Error('AnthropicのAPIキーが未設定だよ');
+      const content = img
+        ? [{ type:'image', source: { type:'base64', media_type: img.mime, data: img.data } }, { type:'text', text: userText }]
+        : userText;
+      url = 'https://api.anthropic.com/v1/messages';
+      headers = { 'Content-Type':'application/json', 'x-api-key': key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' };
+      body = { model: model, max_tokens: 1024, system: sys, messages: [{ role:'user', content: content }] };
+      extract = d => ((d.content || []).map(b => b.text || '').join(''));
+    } else {
+      const key = get(LS.key,'');
+      if (!key) throw new Error('GeminiのAPIキーが未設定だよ');
+      const parts = [];
+      if (img) parts.push({ inline_data: { mime_type: img.mime, data: img.data } });
+      parts.push({ text: userText });
+      body = { system_instruction: { parts: [{ text: sys }] }, contents: [{ role:'user', parts: parts }] };
+      const ss = safetySettings();
+      if (ss && !/gemma/i.test(model)) body.safetySettings = ss;
+      // 短いつぶやきは深く考えなくていいので「low」に（Gemini 3系のみ。初期設定はmedium）
+      if (thinkLow && /gemini-3/i.test(model)) body.generationConfig = { thinkingConfig: { thinkingLevel: 'low' } };
+      url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
+      headers = { 'Content-Type':'application/json' };
+      extract = d => { try { return d.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){ return ''; } };
+    }
+
+    // 混雑・500系は少し待って自動リトライ（最大3回）
+    async function tryCall(u, h, b){
+      let res = null, data = null, lastErr = '';
+      for (let attempt = 0; attempt < 3; attempt++){
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1200 * attempt));
+        try { res = await fetch(u, { method:'POST', headers: h, body: JSON.stringify(b) }); }
+        catch(netErr){ lastErr = netErr.message; continue; }
+        try { data = await res.json(); } catch(e){ data = null; }
+        if (res.ok) return data;
+        const msg = (data && data.error && (data.error.message || data.error.type)) || ('HTTP ' + res.status);
+        lastErr = msg;
+        const transient = res.status === 500 || res.status === 503 || res.status === 429 || res.status === 529 ||
+          /internal error|overloaded|unavailable|try again/i.test(msg);
+        if (!transient) throw new Error(msg);
+      }
+      throw new Error(lastErr || 'Internal error');
+    }
+
+    let data, raw = '';
+    try {
+      try {
+        data = await tryCall(url, headers, body);
+      } catch(e0){
+        // 「low」を受け付けないモデルだった時は、いつもの設定でもう一度
+        if (body && body.generationConfig && /thinking|level|generation_?config|invalid/i.test(e0.message)){
+          delete body.generationConfig;
+          data = await tryCall(url, headers, body);
+        } else throw e0;
+      }
+      raw = extract(data) || '';
+      try {
+        if (provider === 'gemini' && data.usageMetadata) addGeminiUsage(data.usageMetadata, model);
+        else if ((provider === 'openai' || provider === 'openrouter') && data.usage) addTokens(data.usage.prompt_tokens, data.usage.completion_tokens, model);
+        else if (provider === 'anthropic' && data.usage) addTokens(data.usage.input_tokens, data.usage.output_tokens, model);
+      } catch(e){}
+    } catch(err){
+      // 新世代Geminiが旧APIに非対応だった時は、新しいInteractions APIで再挑戦（会話と同じ仕組み）
+      if (provider === 'gemini' && /no longer available|interactions/i.test(err.message)){
+        const input2 = [];
+        if (img) input2.push({ type:'image', mime_type: img.mime, data: img.data });
+        input2.push({ type:'text', text: sys + '\n\n' + userText });
+        data = await tryCall('https://generativelanguage.googleapis.com/v1beta2/interactions',
+          { 'Content-Type':'application/json', 'x-goog-api-key': get(LS.key,'') },
+          { model: model, store: false, input: input2 });
+        (data && data.steps || []).forEach(st => {
+          if (st.type === 'model_output' && st.content){
+            st.content.forEach(c => { if (c.type === 'text' && c.text) raw += c.text; });
+          }
+        });
+        try { if (data && data.usage) addTokens(data.usage.prompt_tokens, data.usage.completion_tokens, model); } catch(e){}
+      } else {
+        throw err;
+      }
+    }
+    if (!raw.trim()){
+      let why = '';
+      try {
+        const fr = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
+        const bk = data.promptFeedback && data.promptFeedback.blockReason;
+        if (bk || fr === 'SAFETY' || fr === 'PROHIBITED_CONTENT') why = 'フィルタに止められたみたい';
+      } catch(e){}
+      throw new Error(why || '返事が空だったよ');
+    }
+    raw = stripMd(raw).replace(/\n{3,}/g, '\n\n');
+    if (provider === 'gemini' && /gemma/i.test(model)){
+      try { raw = stripLabels(stripLeak(raw)); } catch(e){}
+    }
+    return raw.trim();
+  }
+
+  // 「投稿：」「返信：」「コメント（名前）：」の形式を読み取る
+  function snsParse(raw){
+    const MAIN = /^(?:投稿|返信|本文|リプライ|リプ)\s*[：:]\s*(.*)$/;
+    const COM = /^コメント\s*[（(]\s*([^）)]+?)\s*[）)]\s*[：:]\s*(.*)$/;
+    let lines = (raw || '').split('\n');
+    const first = lines.findIndex(l => MAIN.test(l.trim()) || COM.test(l.trim()));
+    if (first > 0) lines = lines.slice(first);           // ラベルより前の前置きは捨てる
+    let main = '', cur = null;
+    const comments = [];
+    lines.forEach(line => {
+      const t = line.trim();
+      let m = t.match(MAIN);
+      if (m){ cur = 'main'; main += (main ? '\n' : '') + m[1]; return; }
+      m = t.match(COM);
+      if (m){ cur = { name: m[1].trim(), text: m[2] }; comments.push(cur); return; }
+      if (cur && cur !== 'main') cur.text += '\n' + line;
+      else main += (main ? '\n' : '') + line;
+    });
+    const clean = s => {
+      s = snsCleanText(s);
+      // 全体が「」や""で1組だけ囲まれている時だけ外す
+      if (/^「[^「」]*」$/.test(s)) s = s.slice(1, -1);
+      else if (/^["“][^"“”]*["”]$/.test(s)) s = s.slice(1, -1);
+      return s.replace(/\n{3,}/g, '\n\n').trim();
+    };
+    return {
+      main: clean(main),
+      comments: comments.map(c => ({ name: c.name, text: clean(c.text) })).filter(c => c.text)
+    };
+  }
+
+  // 彼やフォロワーの文から、存在しないリンク（pic.twitter.com/xxx など）や［画像］の置き換え文字を取り除く
+  function snsCleanText(s){
+    return (s || '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/(?:pic\.twitter\.com|t\.co|x\.com|twitter\.com|instagram\.com|instagr\.am)\/\S*/gi, '')
+      .replace(/[［\[【(（]\s*(?:画像|写真|動画|photo|image|pic)[^］\]】)）]{0,10}[］\]】)）]/gi, '')
+      .replace(/[ \t　]+$/gm, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  // 登録されたフォロワーのコメントだけを受け付ける（知らない人は出さない）
+  function snsFolComments(parsed, baseTs){
+    const fol = snsFollowers();
+    let t = baseTs;
+    return parsed.comments.filter(c => fol.some(f => f.name === c.name)).slice(0, 2).map(c => {
+      t = Math.min(Date.now(), t + snsRand(1, 12) * 60000);
+      return { who: 'fol', name: c.name, text: c.text, ts: t };
+    });
+  }
+
+  function snsSlotInfo(){
+    const now = new Date();
+    const h = now.getHours();
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (h < 5) day.setDate(day.getDate() - 1);          // 深夜は前の日の「夜」扱い
+    let slot = 'e', startH = 17;
+    if (h >= 5 && h < 11){ slot = 'm'; startH = 5; }
+    else if (h >= 11 && h < 17){ slot = 'a'; startH = 11; }
+    return {
+      dk: day.getFullYear() + '-' + (day.getMonth() + 1) + '-' + day.getDate(),
+      slot: slot,
+      start: new Date(day.getFullYear(), day.getMonth(), day.getDate(), startH).getTime()
+    };
+  }
+
+  // 彼の投稿を1件作る（manual=🎲ボタンから / slotStart=自動投稿の時間帯の始まり）
+  // チャットの返事みたいな投稿かどうか（名前で呼びかける・「お前」「君」で話しかける・相づちで始まる）
+  function snsLooksLikeReply(t){
+    const s = (t || '').trim();
+    if (!s) return false;
+    const un = get(LS.uname,'').trim();
+    if (un && un.length >= 2 && s.indexOf(un) !== -1) return true;
+    if (/(お前|おまえ)(?!ら|たち|達)/.test(s)) return true;
+    if (/(^|[、。！？!?\s「])(君|きみ|あんた)(は|が|も|の|に|を|と|って|、)/.test(s)) return true;
+    if (/^(うん|うんうん|そうだな|そうだね|そっか|そうか|わかった|分かった|了解|りょうかい|ありがとう|ありがと|おかえり)[、。！!〜…\s]/.test(s)) return true;
+    return false;
+  }
+
+  async function snsGeneratePost(manual, slotStart){
+    if (snsBusy) return false;
+    if (activeKeyMissing()){
+      if (manual) snsSetNote('このモデル用のAPIキーが未設定だよ。⚙︎から入れてね');
+      return false;
+    }
+    snsBusy = true; snsSetBtns();
+    snsSetNote('✍️ ' + snsCname() + 'がつぶやきを考え中…');
+    try {
+      const uname = snsUname();
+      const conv = snsRecentConv(6);              // つぶやきは直近の様子が分かれば十分
+      const recent = snsRecentPostsText(12, 45);   // 話題かぶり防止用（短く切って12件）
+      const fol = snsFollowers();
+      const h = new Date().getHours();
+      const band = (h >= 5 && h < 11) ? '朝' : (h >= 11 && h < 17) ? '昼' : (h >= 17 && h < 23) ? '夜' : '深夜';
+      const ann = annivContext();
+      let theme;
+      if (ann && Math.random() < 0.6){
+        theme = '近づいている記念日にちなんだ投稿（' + ann + '）';
+      } else {
+        const r = Math.random();
+        theme = r < 0.5 ? uname + 'がそばにいない時間の、あなた自身の日常の一コマ。今回の切り口：' + snsPick(SNS_SEEDS_DAILY) + '。' + uname + 'の話は出さなくてもいい'
+          : r < 0.85 ? '本人には直接言っていない本音を、名前は出さずに独り言として。今回の切り口：' + snsPick(SNS_SEEDS_HEART) + '。重くなりすぎず、本人が読んだらキュンとするくらいの温度で'
+          : '最近の暮らしや出来事をふまえた、さりげない惚気・匂わせ（フォロワーに向けた書き方で）。今回の切り口：' + snsPick(SNS_SEEDS_DAILY.concat(SNS_SEEDS_HEART));
+      }
+      let wx = '';
+      if (flag0(LS.weather)) { try { wx = await weatherContext(); } catch(e){} }
+
+      // 会話ログは「背景資料」としてシステム側に置く。依頼文の最後に祐佳里の発言が来ると、
+      // 彼がそれに返事をしてしまう（＝チャットの返信みたいな投稿になる）ため
+      let bg = '\n\n【背景資料（読んで把握するだけ。ここに書かれた発言に返事はしない）】';
+      bg += '\n◆最近のあなたと' + uname + 'の会話ログ（あなたが知っている出来事として参考にするだけ。引用・要約・返信はしない）\n' +
+        (conv || '（ここ1日半はあまり話していない）');
+      if (recent) bg += '\n◆タイムラインの最近の投稿（ここにある話題・書き出し・締め方は使用済み。今回は別の話題・別の書き方にする）\n' + recent;
+      bg += '\n\n【今回の役割（最優先）】あなたはいま、ひとりでSNSに新しい投稿をしようとしている。これは' + uname + 'への返信ではない。' +
+        '\n・フォロワー全員に向けた独り言のつぶやきとして書く。' + uname + 'に話しかけたり、' + uname + 'の発言に答えたりしない（それはチャットでやること）。' +
+        '\n・投稿の中で' + uname + 'の名前は出さない。触れる時は名前を伏せた匂わせにする。' +
+        '\n・「今回の切り口」に沿って、具体的なもの（料理名・場所・物・数字・固有の出来事など）を1つ以上入れる。ぼんやりした感想だけで終わらせない。' +
+        '\n・毎回同じ締め方（「帰りを待ってる」「迎える準備をする」など）にしない。ペットや相棒の話も、切り口に関係ない時は無理に入れない。';
+
+      const baseP = (extra) => {
+        let p = 'いまは' + nowStr() + '（' + band + '）。\n';
+        if (wx) p += wx.replace('ユーザーの現地の天気', 'いまの天気') + '\n';
+        p += '\n【今回の投稿のテーマ】' + theme + '\n';
+        p += '\nいまの時間帯にふさわしい、あなたのSNS投稿を1つ書いて。誰かへの返事ではなく、独り言のつぶやき。40〜140字くらい。';
+        if (extra) p += '\n' + extra;
+        return p;
+      };
+      let pick = null;
+      let tail = '';
+      if (fol.length && Math.random() < 0.6){
+        pick = fol[Math.floor(Math.random() * fol.length)];
+        tail += '\nさらに、フォロワーの「' + snsFolDesc(pick) + '」がこの投稿に付けたコメントを1つ、その人らしい口調で短く（40字以内）書いて。';
+      }
+      tail += '\n\n【出力形式（厳守）】\n投稿：（投稿の本文）' + (pick ? '\nコメント（' + pick.name + '）：（コメントの本文）' : '') +
+        '\nこの形式の行だけを出力し、前置きや説明は書かない。';
+
+      const sys = snsSystem(conv, true) + bg;
+      let raw = await snsApi(sys, baseP('') + tail, null, true);
+      let parsed = snsParse(raw);
+      if (!parsed.main) throw new Error('投稿が空だったよ');
+      // それでも返事っぽくなった時だけ、1回だけ書き直してもらう
+      if (snsLooksLikeReply(parsed.main)){
+        try {
+          const raw2 = await snsApi(sys, baseP('（前の案「' + parsed.main.slice(0, 60) + '」は' + uname +
+            'への返事になっていたのでボツ。話しかけず、名前も出さず、ひとりごとのつぶやきとして別の内容を書くこと）') + tail, null, true);
+          const p2 = snsParse(raw2);
+          if (p2.main) parsed = p2;
+        } catch(e){}
+      }
+
+      const posts = snsLoad();
+      const now = Date.now();
+      let ts = now;
+      if (!manual && slotStart){
+        // 開いていない間につぶやいていたことにする（ただし最後に見た時・前の投稿より後）
+        const seen = parseInt(get(LS.snsSeen,'0'), 10) || 0;
+        const newest = posts.length ? (posts[0].ts || 0) : 0;
+        const lower = Math.max(slotStart, seen, newest + 60000);
+        if (lower < now - 60000) ts = lower + Math.floor(Math.random() * (now - lower - 60000));
+      }
+      const post = {
+        id: snsId(), who: 'char', text: parsed.main, ts: ts, at: now,
+        likes: fol.length ? snsRand(Math.max(1, fol.length - 1), fol.length + 6) : snsRand(4, 28),
+        replies: []
+      };
+      post.replies = snsFolComments(parsed, ts);
+      posts.unshift(post);
+      snsSave(posts);
+      snsSetNote('');
+      if (snsSheet.classList.contains('show')){ snsRender(); snsMarkSeen(); }
+      else snsUpdateBadge();
+      return true;
+    } catch(e){
+      snsSetNote('🐦 つぶやけなかった…（' + e.message + '）' + (manual ? '' : ' 次に開いた時にもう一度やってみるね'));
+      return false;
+    } finally {
+      snsBusy = false; snsSetBtns();
+    }
+  }
+
+  // 自動投稿：今の時間帯ぶんがまだなら1件
+  let snsAutoRunning = false;
+  async function snsMaybeAuto(){
+    if (snsAutoRunning || snsBusy) return;
+    const freq = get(LS.snsFreq,'3');
+    if (freq === '0' || activeKeyMissing()) return;
+    const si = snsSlotInfo();
+    let st = {};
+    try { st = JSON.parse(get(LS.snsSlot,'{}')) || {}; } catch(e){ st = {}; }
+    if (st.d !== si.dk || !Array.isArray(st.s)) st = { d: si.dk, s: [] };
+    if (st.s.indexOf(si.slot) !== -1) return;
+    if (freq === '1' && st.s.length) return;
+    snsAutoRunning = true;
+    st.s.push(si.slot);
+    try { localStorage.setItem(LS.snsSlot, JSON.stringify(st)); } catch(e){}
+    const ok = await snsGeneratePost(false, si.start);
+    if (!ok){
+      // 失敗した時は枠を戻して、次に開いた時にもう一度
+      try {
+        st.s = st.s.filter(x => x !== si.slot);
+        localStorage.setItem(LS.snsSlot, JSON.stringify(st));
+      } catch(e){}
+    }
+    snsAutoRunning = false;
+  }
+
+  // 彼がリプする（彼の投稿へのリプへの返事／祐佳里の投稿への反応）
+  async function snsCharReply(postId){
+    if (snsTyping[postId]) return;
+    if (activeKeyMissing()){ snsSetNote('このモデル用のAPIキーが未設定だよ。⚙︎から入れてね'); return; }
+    const post0 = snsLoad().find(p => p.id === postId);
+    if (!post0) return;
+    snsTyping[postId] = true;
+    snsRefreshCard(postId);
+    try {
+      const uname = snsUname();
+      const fol = snsFollowers();
+      const conv = snsRecentConv();
+      const isMine = post0.who === 'char';
+      const thread = (post0.replies || []).map(r => (r.who === 'char' ? 'あなた' : snsWhoName(r)) + '：' + r.text).join('\n');
+      const firstReact = !isMine && !(post0.replies || []).some(r => r.who === 'char');
+      let p = 'いまは' + nowStr() + '。\n\n【最近のふたりの会話（参考。引用はしない）】\n' + (conv || '（ここ1日半はあまり話していない）') + '\n\n';
+      p += '【タイムラインの投稿】\n' + (isMine ? 'あなた' : uname) + 'の投稿（' + relTime(post0.ts) + '）：' + (post0.text || '（文章なし）') +
+        (post0.img ? '［写真付き。写真は添付のとおり］' : (post0.imgGone ? '［写真付きだった］' : '')) + '\n';
+      if (thread) p += '\n【この投稿のリプライ欄（古い順）】\n' + thread + '\n';
+      if (isMine) p += '\n' + uname + 'があなたの投稿にリプライした。あなたとして、それへの返信を1つ書いて。短め（60字前後まで）。';
+      else if (firstReact) p += '\n' + uname + 'が自分のSNSに投稿した。あなたとして、この投稿へのリプライを1つ書いて。短め（80字前後まで）。写真があれば、写っているものにちゃんと触れて。';
+      else p += '\n' + uname + 'が自分の投稿のリプライ欄で、あなたに返事をした。あなたとして、それへの返信を1つ書いて。短め（60字前後まで）。';
+      let pick = null;
+      if (firstReact && fol.length && Math.random() < 0.5){
+        pick = fol[Math.floor(Math.random() * fol.length)];
+        p += '\nさらに、フォロワーの「' + snsFolDesc(pick) + '」が' + uname + 'の投稿に付けたコメントを1つ、その人らしい口調で短く（40字以内）書いて。';
+      }
+      p += '\n\n【出力形式（厳守）】\n返信：（返信の本文）' + (pick ? '\nコメント（' + pick.name + '）：（コメントの本文）' : '') +
+        '\nこの形式の行だけを出力し、前置きや説明は書かない。';
+      const img = (post0.img && !isMine) ? { mime: 'image/jpeg', data: post0.img.split(',')[1] } : null;
+      const raw = await snsApi(snsSystem(conv + '\n' + (post0.text || '')), p, img);
+      const parsed = snsParse(raw);
+      if (!parsed.main) throw new Error('返事が空だったよ');
+
+      const posts = snsLoad();
+      const post = posts.find(x => x.id === postId);
+      if (post){
+        if (!post.replies) post.replies = [];
+        const now = Date.now();
+        post.replies.push({ who: 'char', text: parsed.main, ts: now });
+        if (!isMine){
+          post.charLiked = true;
+          if (firstReact) post.likes = fol.length ? snsRand(Math.max(1, fol.length - 1), fol.length + 5) : snsRand(3, 22);
+        }
+        snsFolComments(parsed, now).forEach(c => post.replies.push(c));
+        snsSave(posts);
+      }
+      snsSetNote('');
+    } catch(e){
+      snsSetNote('🐦 返事をもらえなかった…（' + e.message + '）。投稿の「🔄 反応をもらう」でやり直せるよ');
+    } finally {
+      delete snsTyping[postId];
+      snsRefreshCard(postId);
+      if (snsSheet.classList.contains('show')) snsMarkSeen(); else snsUpdateBadge();
+    }
+  }
+
+  function snsSendReply(postId, text){
+    const posts = snsLoad();
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    if (!post.replies) post.replies = [];
+    post.replies.push({ who: 'user', text: text, ts: Date.now() });
+    snsSave(posts);
+    snsDrafts[postId] = '';
+    snsRefreshCard(postId);
+    snsCharReply(postId);
+  }
+
+  function snsCompress(file){
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 640;   // 保存と送信の両方に使うので小さめ
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX){
+            const r = Math.min(MAX / w, MAX / h);
+            w = Math.round(w * r); h = Math.round(h * r);
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', 0.66));
+        };
+        img.onerror = () => resolve('');
+        img.src = reader.result;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function snsUserPost(){
+    const text = snsInput.value.trim();
+    if (!text && !snsPendingImg) return;
+    const now = Date.now();
+    const post = { id: snsId(), who: 'user', text: text, ts: now, at: now, img: snsPendingImg || '', likes: 0, replies: [] };
+    const posts = snsLoad();
+    posts.unshift(post);
+    if (!snsSave(posts)) return;
+    snsInput.value = '';
+    snsPendingImg = '';
+    document.getElementById('snsThumbWrap').hidden = true;
+    snsCompose.hidden = true;
+    snsRender();
+    snsSheet.scrollTop = 0;
+    snsCharReply(post.id);
+  }
+
+  /* ----- 表示 ----- */
+  function snsAvatarEl(who, name, small){
+    const src = who === 'char' ? get(LS.avatar,'') : (who === 'user' ? get(LS.uavatar,'') : '');
+    if (src){
+      const img = document.createElement('img');
+      img.className = 'sns-av' + (small ? ' sm' : '');
+      img.src = src; img.alt = '';
+      return img;
+    }
+    const d = document.createElement('div');
+    d.className = 'sns-av' + (who === 'char' ? '' : ' me') + (small ? ' sm' : '');
+    d.textContent = (name || '？').slice(0, 1);
+    return d;
+  }
+
+  function snsCard(p){
+    const cname = snsCname();
+    const card = document.createElement('div');
+    card.className = 'sns-card';
+    card.dataset.id = p.id;
+    card.appendChild(snsAvatarEl(p.who, snsWhoName(p)));
+    const main = document.createElement('div');
+    main.className = 'sns-main';
+
+    const head = document.createElement('div');
+    head.className = 'sns-head';
+    const nm = document.createElement('span');
+    nm.className = 'sns-name';
+    nm.textContent = snsWhoName(p);
+    const tm = document.createElement('span');
+    tm.className = 'sns-time';
+    tm.textContent = '· ' + relTime(p.ts);
+    tm.title = fmtDate(p.ts) + ' ' + fmtTime(p.ts);
+    const grow = document.createElement('span');
+    grow.className = 'grow';
+    const del = document.createElement('button');
+    del.className = 'sns-del';
+    del.textContent = '✕';
+    del.setAttribute('aria-label', 'この投稿を消す');
+    del.addEventListener('click', () => {
+      if (!confirm('この投稿をタイムラインから消す？（リプも一緒に消えるよ）')) return;
+      snsSave(snsLoad().filter(x => x.id !== p.id));
+      snsRender();
+    });
+    head.appendChild(nm); head.appendChild(tm); head.appendChild(grow); head.appendChild(del);
+    main.appendChild(head);
+
+    if (p.text){
+      const tx = document.createElement('div');
+      tx.className = 'sns-text';
+      if (/https?:\/\//.test(p.text)) tx.innerHTML = linkify(p.text);
+      else tx.textContent = p.text;
+      main.appendChild(tx);
+    }
+    if (p.img){
+      const im = document.createElement('img');
+      im.className = 'sns-img';
+      im.src = p.img;
+      im.alt = '投稿の写真';
+      main.appendChild(im);
+    } else if (p.imgGone){
+      const g = document.createElement('div');
+      g.className = 'sns-gone';
+      g.textContent = '📷 写真は容量節約のためお片付け済み';
+      main.appendChild(g);
+    }
+
+    const acts = document.createElement('div');
+    acts.className = 'sns-acts';
+    const mk = (label, cls, fn, aria) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sns-act' + (cls ? ' ' + cls : '');
+      b.textContent = label;
+      if (aria) b.setAttribute('aria-label', aria);
+      b.addEventListener('click', fn);
+      acts.appendChild(b);
+      return b;
+    };
+    const nRep = (p.replies || []).length;
+    mk('💬 ' + nRep, '', () => {
+      snsOpenReply = (snsOpenReply === p.id) ? null : p.id;
+      snsRefreshCard(p.id);
+      if (snsOpenReply === p.id){
+        setTimeout(() => {
+          const ta = snsList.querySelector('.sns-card[data-id="' + p.id + '"] .sns-rbox textarea');
+          if (ta) ta.focus();
+        }, 50);
+      }
+    }, 'リプする');
+    const likeN = (p.likes || 0) + (p.liked ? 1 : 0);
+    mk((p.liked ? '♥ ' : '♡ ') + likeN, p.liked ? 'liked' : '', () => {
+      const posts = snsLoad();
+      const q = posts.find(x => x.id === p.id);
+      if (!q) return;
+      q.liked = !q.liked;
+      snsSave(posts);
+      snsRefreshCard(p.id);
+    }, 'いいね');
+    mk(p.faved ? '⭐ 保存済み' : '☆ 保存', p.faved ? 'saved' : '', () => {
+      if (p.faved) return;
+      saveFav({ text: (p.text || '（写真）'), role: p.who === 'char' ? 'model' : 'user', ts: p.ts }, null, '🐦タイムライン');
+      const posts = snsLoad();
+      const q = posts.find(x => x.id === p.id);
+      if (q){ q.faved = true; snsSave(posts); }
+      snsRefreshCard(p.id);
+    }, 'アルバムに保存');
+    if (p.who === 'user' && !snsTyping[p.id] && !(p.replies || []).some(r => r.who === 'char')){
+      mk('🔄 反応をもらう', '', () => snsCharReply(p.id));
+    }
+    main.appendChild(acts);
+
+    if (p.who === 'user' && p.charLiked){
+      const lb = document.createElement('div');
+      lb.className = 'sns-likedby';
+      lb.textContent = '♥ ' + cname + 'がいいねしました';
+      main.appendChild(lb);
+    }
+
+    if (nRep || snsTyping[p.id]){
+      const reps = document.createElement('div');
+      reps.className = 'sns-replies';
+      (p.replies || []).forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'sns-reply';
+        row.appendChild(snsAvatarEl(r.who, snsWhoName(r), true));
+        const rb = document.createElement('div');
+        rb.className = 'sns-rbody';
+        const rh = document.createElement('div');
+        rh.className = 'sns-rhead';
+        const b = document.createElement('b');
+        b.textContent = snsWhoName(r);
+        rh.appendChild(b);
+        rh.appendChild(document.createTextNode(' · ' + relTime(r.ts)));
+        const rt = document.createElement('div');
+        rt.className = 'sns-rtext';
+        rt.textContent = r.text;
+        rb.appendChild(rh); rb.appendChild(rt);
+        row.appendChild(rb);
+        reps.appendChild(row);
+      });
+      if (snsTyping[p.id]){
+        const ty = document.createElement('div');
+        ty.className = 'sns-typing';
+        ty.textContent = '💬 ' + cname + 'が入力中…';
+        reps.appendChild(ty);
+      }
+      main.appendChild(reps);
+    }
+
+    const rbox = document.createElement('div');
+    rbox.className = 'sns-rbox';
+    rbox.hidden = snsOpenReply !== p.id;
+    const ta = document.createElement('textarea');
+    ta.rows = 1;
+    ta.placeholder = p.who === 'char' ? (cname + 'にリプする…') : '返事を書く…';
+    ta.value = snsDrafts[p.id] || '';
+    ta.addEventListener('input', () => {
+      snsDrafts[p.id] = ta.value;
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    });
+    const sb = document.createElement('button');
+    sb.type = 'button';
+    sb.className = 'sns-tbtn solid';
+    sb.textContent = '送信';
+    sb.disabled = !!snsTyping[p.id];
+    sb.addEventListener('mousedown', (e) => { if (document.activeElement === ta) e.preventDefault(); });
+    sb.addEventListener('click', () => {
+      const v = ta.value.trim();
+      if (!v || snsTyping[p.id]) return;
+      snsSendReply(p.id, v);
+    });
+    rbox.appendChild(ta); rbox.appendChild(sb);
+    main.appendChild(rbox);
+
+    card.appendChild(main);
+    return card;
+  }
+
+  function snsRender(){
+    if (!snsSheet.classList.contains('show')) return;
+    const posts = snsLoad();
+    const keep = snsSheet.scrollTop;
+    snsList.innerHTML = '';
+    if (!posts.length){
+      const e = document.createElement('div');
+      e.className = 'sns-empty';
+      e.textContent = 'まだ投稿がないよ。\n🎲「つぶやいて」で' + snsCname() + 'に投稿してもらうか、✏️で最初の投稿をしてみて🐦';
+      e.style.whiteSpace = 'pre-line';
+      snsList.appendChild(e);
+      return;
+    }
+    posts.forEach(p => snsList.appendChild(snsCard(p)));
+    snsSheet.scrollTop = keep;
+  }
+
+  // 1件だけ描き直す（他の投稿で書きかけのリプやキーボードを邪魔しない）
+  function snsRefreshCard(id){
+    if (!snsSheet.classList.contains('show')) return;
+    const old = snsList.querySelector('.sns-card[data-id="' + id + '"]');
+    const p = snsLoad().find(x => x.id === id);
+    if (!old){ if (p) snsRender(); return; }
+    if (!p){ old.remove(); return; }
+    const hadFocus = old.contains(document.activeElement);
+    const fresh = snsCard(p);
+    old.replaceWith(fresh);
+    if (hadFocus){
+      const ta = fresh.querySelector('.sns-rbox textarea');
+      if (ta && !fresh.querySelector('.sns-rbox').hidden) ta.focus();
+    }
+  }
+
+  function openSns(){
+    closeSheets();
+    snsSheet.classList.add('show');
+    overlay.classList.add('show');
+    snsRender();
+    snsSheet.scrollTop = 0;
+    snsMarkSeen();
+    snsSetBtns();
+    snsMaybeAuto();
+  }
+
+  document.getElementById('snsBtn').addEventListener('click', openSns);
+  snsAskBtn.addEventListener('click', () => snsGeneratePost(true));
+  document.getElementById('snsComposeBtn').addEventListener('click', () => {
+    snsCompose.hidden = !snsCompose.hidden;
+    if (!snsCompose.hidden){
+      snsSheet.scrollTop = 0;
+      setTimeout(() => snsInput.focus(), 50);
+    }
+  });
+  const snsImgInput = document.getElementById('snsImgInput');
+  document.getElementById('snsPhotoBtn').addEventListener('click', () => snsImgInput.click());
+  snsImgInput.addEventListener('change', async () => {
+    const f = snsImgInput.files && snsImgInput.files[0];
+    snsImgInput.value = '';
+    if (!f) return;
+    const url = await snsCompress(f);
+    if (!url){ snsSetNote('写真が読み込めなかったよ。別の写真で試してみて'); return; }
+    snsPendingImg = url;
+    document.getElementById('snsThumb').src = url;
+    document.getElementById('snsThumbWrap').hidden = false;
+  });
+  document.getElementById('snsPhotoClear').addEventListener('click', () => {
+    snsPendingImg = '';
+    document.getElementById('snsThumbWrap').hidden = true;
+  });
+  document.getElementById('snsPostBtn').addEventListener('click', snsUserPost);
+  attachSwipeClose(snsSheet);
+
+  // チャットの相手にも、最近のタイムラインのやりとりをそっと教えておく
+  function snsChatContext(){
+    const posts = snsLoad();
+    if (!posts.length) return '';
+    const uname = snsUname();
+    const since = Date.now() - 48 * 3600 * 1000;
+    return posts.filter(p => (p.ts || 0) >= since).slice(0, 3).map(p => {
+      let s = (p.who === 'char' ? 'あなた' : uname) + 'の投稿（' + relTime(p.ts) + '）「' + (p.text || '（写真）').slice(0, 80) + '」' + (p.img || p.imgGone ? '［写真付き］' : '');
+      if (p.who === 'char' && p.liked) s += '（' + uname + 'がいいね）';
+      const rs = (p.replies || []).slice(-2).map(r => (r.who === 'char' ? 'あなた' : snsWhoName(r)) + '「' + (r.text || '').slice(0, 50) + '」');
+      if (rs.length) s += ' → リプ：' + rs.join(' ');
+      return s;
+    }).join('\n');
+  }
+
+  // アプリに戻ってきた時：新着バッジの更新と、時間帯の投稿チェック
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    snsUpdateBadge();
+    setTimeout(snsMaybeAuto, 3000);
+  });
+
   /* ---------- init ---------- */
   initThreads();
   applySkin();
@@ -3986,6 +5119,7 @@
   updateHeader();
   updateModeBtn();
   renderAll();
+  snsUpdateBadge();
   if (activeKeyMissing()) {
     setTimeout(openSheet, 600);
   } else {
@@ -3993,6 +5127,8 @@
       const greeted = await maybeGreet();
       if (!greeted) checkPendingNudge();
     }, 800);
+    // 🐦 第一声と重ならないよう、少し遅れて時間帯の投稿をチェック
+    setTimeout(snsMaybeAuto, 6000);
   }
 })();
 </script>
