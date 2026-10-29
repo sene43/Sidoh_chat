@@ -64,12 +64,19 @@
     border-bottom:1px solid rgba(183,110,121,.18);
     z-index:5;
   }
+  .header-av-wrap{flex:0 0 auto;position:relative}
   .presence{
     width:10px;height:10px;border-radius:50%;
     background:var(--ao);
     box-shadow:0 0 0 0 rgba(183,110,121,.5);
     animation:breathe 3s ease-in-out infinite;
     flex:0 0 auto;
+  }
+  .header-avatar{
+    width:var(--avsize,34px);height:var(--avsize,34px);border-radius:50%;
+    object-fit:cover;
+    border:1.5px solid rgba(183,110,121,.55);
+    background:var(--surface);
   }
   @keyframes breathe{
     0%,100%{box-shadow:0 0 0 0 rgba(183,110,121,.45)}
@@ -96,7 +103,7 @@
     -webkit-overflow-scrolling:touch;
   }
   .msg{
-    max-width:82%;
+    max-width:92%;
     padding:11px 15px;
     border-radius:var(--radius);
     font-size:var(--msgfs,15px);line-height:1.75;
@@ -227,21 +234,6 @@
   .empty-hint b{color:var(--ao);font-size:16px}
 
   /* ---------- avatar & light theme ---------- */
-  .ai-row{
-    display:flex;align-items:flex-start;gap:8px;
-    align-self:flex-start;max-width:88%;
-    animation:pop .18s ease-out;
-  }
-  .ai-row .msg{max-width:100%;animation:none}
-  .avatar{
-    width:var(--avsize,34px);height:var(--avsize,34px);border-radius:50%;
-    object-fit:cover;flex:0 0 auto;
-    border:1.5px solid rgba(183,110,121,.55);
-    background:var(--surface);
-    position:sticky;
-    top:8px;              /* 長文を読んでいる間、アイコンがついてくる */
-    align-self:flex-start;
-  }
   body.light{
     --bg:#f7f1ea; --bg2:#f3ece4;
     --surface:#ffffff; --surface2:#ffffff;
@@ -389,12 +381,6 @@
     background:linear-gradient(135deg,var(--ao) 0%,var(--ao-deep) 100%);
     color:#fff;border-color:transparent;font-weight:700;
   }
-  .user-row{
-    display:flex;flex-direction:row-reverse;align-items:flex-start;gap:8px;
-    align-self:flex-end;max-width:88%;
-    animation:pop .18s ease-out;
-  }
-  .user-row .msg{max-width:100%;animation:none}
   .field input[type=checkbox]{
     -webkit-appearance:none;appearance:none;
     width:24px;height:24px;flex:0 0 auto;margin:0;
@@ -550,7 +536,10 @@
 <body>
 
 <header>
-  <div class="presence" aria-hidden="true"></div>
+  <div id="headerAvatarWrap" class="header-av-wrap">
+    <div class="presence" id="headerPresence" aria-hidden="true"></div>
+    <img class="header-avatar" id="headerAvatar" alt="" hidden>
+  </div>
   <div>
     <div class="partner-name" id="headerName">紫堂</div>
     <div class="partner-sub" id="headerSub">おや、いらっしゃい</div>
@@ -833,6 +822,25 @@
   </div>
 
   <div class="field" data-pane="you">
+    <label for="schedList">📅 私の予定</label>
+    <button type="button" class="btn line" id="schedPasteBtn" style="margin-top:0">📋 コピーした予定を読み込む</button>
+    <div class="hint" id="schedStatus" style="margin-top:6px"></div>
+    <textarea id="schedList" style="min-height:90px;margin-top:8px" placeholder="10/28 19:00 歯医者&#10;10/30 有給"></textarea>
+    <div class="hint">「月/日 (時刻) 予定」を1行ずつ。今日〜3日先の予定だけを伝えるから、「明日歯医者だろ？」みたいに気にかけてくれるよ。過ぎた予定は保存の時に自動でお片付け。<br>📋ボタンは、ショートカットでコピーしたカレンダーの予定をまるごと入れ替えるよ。</div>
+    <details style="margin-top:8px;font-size:12.5px;color:var(--ink-dim);line-height:1.7">
+      <summary style="cursor:pointer">📱 カレンダー連携ショートカットの作り方</summary>
+      <ol style="padding-left:1.3em;margin:6px 0 0">
+        <li>iPhoneの「設定」→「アプリ」→「カレンダー」→「カレンダーアカウント」で、Googleアカウントを追加して「カレンダー」をオン</li>
+        <li>ショートカットアプリで新規作成 →「カレンダーのイベントを検索」を追加。条件を「開始日」「次の」「7日」、並び順「開始日」「古い順」に</li>
+        <li>「各項目を繰り返す」を追加。中に「テキスト」を入れて「繰り返し項目」の「開始日」（日付フォーマット：カスタム <b>yyyy/M/d H:mm</b>）、半角スペース、「繰り返し項目」の「タイトル」を並べる</li>
+        <li>繰り返しの後に「テキストを結合」（区切り：改行）→「クリップボードにコピー」を追加</li>
+        <li>名前を「予定をコピー」にして完成。実行したらこのアプリで📋をタップ✨</li>
+      </ol>
+      <div style="margin-top:4px">※終日の予定は「0:00」になるので、終日として扱うよ。アプリごとに📋が必要（4人それぞれの家に届けるイメージ）。</div>
+    </details>
+  </div>
+
+  <div class="field" data-pane="you">
     <label for="uName">私の名前（呼んでほしい名前）</label>
     <input type="text" id="uName" placeholder="例：ゆかり">
   </div>
@@ -855,13 +863,6 @@
     <div class="hint">「名前／関係／性格ひとこと」を1行に1人。ここに書いた人だけがコメントしに来るよ（このアプリの中だけの設定だから、他の子の世界とは混ざらない）。空欄なら♡の数だけ表示されるよ。</div>
   </div>
 
-  <div class="field" data-pane="you">
-    <label>私のアイコン（自分の吹き出し用）</label>
-    <button type="button" class="btn line" id="uAvatarBtn" style="margin-top:0">🙋 自分のアイコン画像を設定</button>
-    <button type="button" class="btn line" id="uAvatarClear">アイコンを外す</button>
-    <input type="file" id="uAvatarInput" accept="image/*" hidden>
-  </div>
-
   <div class="field" data-pane="look">
     <label>きせかえ🎨</label>
     <button type="button" class="btn line" id="bgBtn" style="margin-top:0">🖼 チャット背景を設定</button>
@@ -873,7 +874,7 @@
       <input type="checkbox" id="lightTheme">
       <label for="lightTheme" style="margin:0">明るい背景用の表示にする（ライトテーマ）</label>
     </div>
-    <div class="hint">背景を設定すると明るさを自動判定してテーマも切り替えるよ。アイコンは吹き出しの横に丸く表示される（LINE風）。画像はこの端末の中にだけ保存されます。</div>
+    <div class="hint">背景を設定すると明るさを自動判定してテーマも切り替えるよ。アイコンはヘッダーの名前の横に丸く表示されるよ。画像はこの端末の中にだけ保存されます。</div>
   </div>
 
   <div class="field" data-pane="look">
@@ -890,7 +891,7 @@
       <option value="56">大</option>
       <option value="72">特大</option>
     </select>
-    <div class="hint">吹き出し横のアイコン（相手と自分の両方）の大きさ。選ぶとすぐ反映。</div>
+    <div class="hint">ヘッダーに表示されるアイコンの大きさ。選ぶとすぐ反映。</div>
   </div>
 
   <div class="field" data-pane="act">
@@ -954,6 +955,7 @@
     greet: KP + 'autogreet',
     nudge: KP + 'autonudge',
     anniv: KP + 'anniv',
+    sched: KP + 'sched',
     weather: KP + 'weather',
     voice: KP + 'voice',
     search: KP + 'search',
@@ -965,7 +967,6 @@
     favs:  KP + 'favs',
     uname: KP + 'uname',
     uintro: KP + 'uintro',
-    uavatar: KP + 'uavatar',
     fsize: KP + 'fsize',
     tok:   KP + 'tokstats',
     mrecent: KP + 'mrecent',
@@ -1515,6 +1516,11 @@
       out += '\n\n【物語モード（厳守）】この会話は連続したロールプレイ・物語である。現実の時刻・日付・経過時間には一切言及せず、物語の中の時間軸だけを生きること。会話が空いても「久しぶり」「あの時は楽しかった」など過去の振り返りやダイジェストにせず、必ず前回のシーンの続きから、その場にいる続きとして自然に再開する。';
     } else {
       out += '\n\n【現在時刻】' + nowStr() + '。この時刻は常に把握しておくこと。ただし毎回口に出さず、時間に触れる自然な理由がある時だけ会話に活かす（例：出勤・退勤が近い、日付や年が変わった、記念日、遅い時間だから体を気づかう、など）。';
+      const sch = schedContext();
+      if (sch){
+        out += '\n\n【相手の予定（相手のカレンダーより。今日〜3日先）】\n' + sch +
+          '\n予定は把握しておくだけでよく、毎回話題にしない。前の晩や当日など自然なタイミングで、さりげなく気にかける程度に活かす（例：前の晩に翌日の予定を思い出して気づかう、終わったころに様子を聞く）。書かれていない予定を作ったり、内容を勝手に膨らませたりしない。時刻を過ぎた予定の結果は決めつけず、相手から聞く。';
+      }
       if (bridgeGapMs >= 3*3600*1000){
         out += '\n\n【時間の橋渡し（厳守）】前回言葉を交わしてから約' + gapText(bridgeGapMs) + '経っているが、その間もふたりの生活は途切れず続いていた。設定上いっしょに暮らしているなら、その時間も当たり前に一緒に過ごしている（並んで眠って朝を迎えた、出かけるのを見送った、家事をした等）前提で自然に振る舞うこと。「久しぶり」「しばらく会えなかったね」「昨日はよく眠れた？」のような、相手の生活を知らない・離れて暮らしているかのような反応は絶対にしない。相手の生活リズムを把握している前提で、いまの時間帯に合った、暮らしの続きとしての反応をする。';
       }
@@ -1572,6 +1578,7 @@
       else el = addBubble(m.role === 'model' ? 'ai' : 'user', m.role === 'model' ? stripMd(m.text) : m.text, false, m.ts);
       if (el) el.dataset.hidx = idx;
     });
+    updateHeaderAvatar();
     scrollBottom();
   }
 
@@ -1599,35 +1606,7 @@
       tm.textContent = fmtTime(ts);
       d.appendChild(tm);
     }
-    let node = d;
-    if (cls === 'ai'){
-      const av = get(LS.avatar,'');
-      if (av){
-        const row = document.createElement('div');
-        row.className = 'ai-row';
-        const img = document.createElement('img');
-        img.className = 'avatar';
-        img.src = av;
-        img.alt = '';
-        row.appendChild(img);
-        row.appendChild(d);
-        node = row;
-      }
-    } else if (cls === 'user'){
-      const uav = get(LS.uavatar,'');
-      if (uav){
-        const row = document.createElement('div');
-        row.className = 'user-row';
-        const img = document.createElement('img');
-        img.className = 'avatar';
-        img.src = uav;
-        img.alt = '';
-        row.appendChild(img);
-        row.appendChild(d);
-        node = row;
-      }
-    }
-    chatEl.appendChild(node);
+    chatEl.appendChild(d);
     if (scroll === 'top') scrollToMsg(node);
     else if (scroll !== false) scrollBottom();
     return d;
@@ -1755,6 +1734,7 @@
     [/gemini-3\.5-flash/i,       1.50, 9.00],
     [/gemini-3\.[678]-flash(?!-lite)/i, 1.50, 7.50, { until: PROMO_UNTIL_2026, in: 0.75, out: 3.75 }],  // 3.6/3.7/3.8は同料金・年内は半額
     [/gemini-2\.5-pro/i,         1.25, 10.0],
+    [/argon/i,                   4.00, 20.0, { until: PROMO_UNTIL_2026, in: 2.00, out: 10.0 }],  // Gemini 4 Argon・年内はプロモ半額
     [/haiku/i,                   1.00, 5.00],
     [/sonnet-5/i,                2.00, 10.0],
     [/sonnet/i,                  3.00, 15.0],
@@ -2597,6 +2577,92 @@
     return notes.length ? '記念日情報：' + notes.join(' ') : '';
   }
 
+  /* ---------- 📅 私の予定（カレンダー連携はショートカット経由のコピペ） ---------- */
+  // 1行を読む：「(年/)月/日 (曜) (時:分(〜時:分)) 予定」。読めない行は null
+  function schedParseLine(line){
+    const m = String(line || '').match(/^\s*(?:(\d{4})\s*[\/\-年.]\s*)?(\d{1,2})\s*[\/\-月.]\s*(\d{1,2})日?\s*(?:[\(（][^)）]*[\)）])?\s*(?:(\d{1,2})[:：](\d{2})(?:\s*[-〜~ー]\s*(\d{1,2})[:：](\d{2}))?)?\s*(.*)$/);
+    if (!m) return null;
+    const mo = +m[2], da = +m[3];
+    if (mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let y = m[1] ? +m[1] : now.getFullYear();
+    let date = new Date(y, mo - 1, da);
+    // 年を書いていない行で、半年以上前になる日付は来年のこと（12月に1月の予定を書いた時など）
+    if (!m[1] && (today - date) > 180 * 86400000){ y++; date = new Date(y, mo - 1, da); }
+    let time = '';
+    if (m[4] !== undefined){
+      const h = +m[4], mi = m[5];
+      if (!(h === 0 && mi === '00' && m[6] === undefined)){   // 0:00だけは終日の予定として扱う
+        time = h + ':' + mi;
+        if (m[6] !== undefined) time += '〜' + (+m[6]) + ':' + m[7];
+      }
+    }
+    const title = (m[8] || '').trim();
+    if (!title) return null;
+    return { date: date, y: y, mo: mo, da: da, time: time, title: title };
+  }
+
+  function schedDiff(ev){
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((ev.date - today) / 86400000);
+  }
+
+  // 保存の時：過ぎた予定（昨日以前）を片付ける。読めない行（メモ書き）はそのまま残す
+  function schedPrune(text){
+    return String(text || '').split('\n').map(s => s.trim()).filter(l => {
+      if (!l) return false;
+      const ev = schedParseLine(l);
+      return !ev || schedDiff(ev) >= 0;
+    }).join('\n');
+  }
+
+  // 会話に渡すのは今日〜3日先の予定だけ（トークン節約＆話題にしすぎないため）
+  function schedContext(){
+    const evs = get(LS.sched,'').split('\n').map(schedParseLine).filter(Boolean)
+      .map(ev => Object.assign(ev, { diff: schedDiff(ev) }))
+      .filter(ev => ev.diff >= 0 && ev.diff <= 3);
+    if (!evs.length) return '';
+    const tmin = t => { const m = t.match(/^(\d+):(\d+)/); return m ? (+m[1]) * 60 + (+m[2]) : -1; };
+    evs.sort((a, b) => a.diff - b.diff || tmin(a.time) - tmin(b.time));
+    const dayName = ['今日', '明日', 'あさって', '3日後'];
+    const wd = '日月火水木金土';
+    return evs.map(ev => '・' + dayName[ev.diff] + ' ' + ev.mo + '/' + ev.da + '(' + wd[ev.date.getDay()] + ') ' +
+      (ev.time || '終日') + ' ' + ev.title).join('\n');
+  }
+
+  document.getElementById('schedPasteBtn').addEventListener('click', async () => {
+    const st = document.getElementById('schedStatus');
+    let txt = '';
+    try {
+      txt = await navigator.clipboard.readText();
+    } catch(e){
+      st.textContent = '📋 コピーした内容を読めなかった…。下の欄を長押しして「ペースト」で入れてもOKだよ';
+      return;
+    }
+    const got = [];
+    String(txt || '').split(/\r?\n/).forEach(l => {
+      const ev = schedParseLine(l);
+      if (ev) got.push({ ev: ev, line: ev.y + '/' + ev.mo + '/' + ev.da + ' ' + (ev.time ? ev.time + ' ' : '') + ev.title });
+    });
+    if (!got.length){
+      st.textContent = '📋 予定が見つからなかったよ。先にショートカットを実行してから押してね（「月/日 時刻 予定」の形になってるかも確認してね）';
+      return;
+    }
+    // カレンダーの内容でまるごと入れ替え。ただし読み込んだ範囲より先の日付で手書きした予定は残す
+    const lastT = Math.max.apply(null, got.map(g => g.ev.date.getTime()));
+    const keep = get(LS.sched,'').split('\n').map(s => s.trim()).filter(l => {
+      const ev = schedParseLine(l);
+      return ev && ev.date.getTime() > lastT;
+    });
+    const merged = schedPrune(got.map(g => g.line).concat(keep).join('\n'));
+    try { localStorage.setItem(LS.sched, merged); } catch(e){ st.textContent = '保存できなかった…'; return; }
+    document.getElementById('schedList').value = merged;
+    const near = schedContext();
+    st.textContent = '📅 ' + got.length + '件の予定を読み込んだよ' + (near ? '（直近3日：' + near.split('\n').length + '件）' : '（直近3日は予定なし）');
+  });
+
   function weatherDesc(c){
     if (c === 0) return '快晴';
     if (c <= 3) return '晴れときどき曇り';
@@ -3416,6 +3482,8 @@
     document.getElementById('autoMem').value = get(LS.amem,'');
     updateAmemCount();
     document.getElementById('annivList').value = get(LS.anniv,'');
+    document.getElementById('schedList').value = get(LS.sched,'');
+    document.getElementById('schedStatus').textContent = '';
     document.getElementById('autoGreet').checked = flag(LS.greet);
     document.getElementById('autoNudge').checked = flag(LS.nudge);
     document.getElementById('useWeather').checked = flag0(LS.weather);
@@ -3518,6 +3586,7 @@
     localStorage.setItem(LS.mem, document.getElementById('memory').value.trim());
     localStorage.setItem(LS.amem, document.getElementById('autoMem').value.trim());
     localStorage.setItem(LS.anniv, document.getElementById('annivList').value.trim());
+    localStorage.setItem(LS.sched, schedPrune(document.getElementById('schedList').value));
     localStorage.setItem(LS.greet, document.getElementById('autoGreet').checked ? '1':'0');
     localStorage.setItem(LS.nudge, document.getElementById('autoNudge').checked ? '1':'0');
     localStorage.setItem(LS.weather, document.getElementById('useWeather').checked ? '1':'0');
@@ -3812,6 +3881,19 @@
   function applyAvSize(){
     document.documentElement.style.setProperty('--avsize', get(LS.avsize,'34') + 'px');
   }
+  /* ヘッダーアバター表示切替：画像があれば表示、なければ緑ドットに戻す */
+  function updateHeaderAvatar(){
+    const img = document.getElementById('headerAvatar');
+    const dot = document.getElementById('headerPresence');
+    const src = get(LS.avatar,'');
+    if (src){
+      img.src = src; img.hidden = false;
+      dot.style.display = 'none';
+    } else {
+      img.hidden = true; img.removeAttribute('src');
+      dot.style.display = '';
+    }
+  }
   document.getElementById('avSizeSel').addEventListener('change', (e) => {
     localStorage.setItem(LS.avsize, e.target.value);
     applyAvSize();
@@ -3824,21 +3906,6 @@
     applyFont();
   });
 
-  /* ---------- my avatar ---------- */
-  const uAvatarInput = document.getElementById('uAvatarInput');
-  document.getElementById('uAvatarBtn').addEventListener('click', () => uAvatarInput.click());
-  uAvatarInput.addEventListener('change', () => {
-    const f = uAvatarInput.files && uAvatarInput.files[0];
-    if (!f) return;
-    fileToDataUrl(f, 128, true, (url) => {
-      try { localStorage.setItem(LS.uavatar, url); renderAll(); } catch(e){ alert('画像を保存できなかった…'); }
-      uAvatarInput.value = '';
-    });
-  });
-  document.getElementById('uAvatarClear').addEventListener('click', () => {
-    localStorage.removeItem(LS.uavatar);
-    renderAll();
-  });
 
   /* ---------- API test ---------- */
   document.getElementById('apiTestBtn').addEventListener('click', async () => {
@@ -4775,7 +4842,7 @@
       }
       snsSetNote('');
     } catch(e){
-      snsSetNote('🐦 返事をもらえなかった…（' + e.message + '）。投稿の「🔄 反応をもらう」でやり直せるよ');
+      snsSetNote('🐦 返事をもらえなかった…（' + e.message + '）。投稿の下の「🔄」ボタンでやり直せるよ');
     } finally {
       delete snsTyping[postId];
       snsRefreshCard(postId);
@@ -4839,7 +4906,7 @@
 
   /* ----- 表示 ----- */
   function snsAvatarEl(who, name, small){
-    const src = who === 'char' ? get(LS.avatar,'') : (who === 'user' ? get(LS.uavatar,'') : '');
+    const src = who === 'char' ? get(LS.avatar,'') : '';
     if (src){
       const img = document.createElement('img');
       img.className = 'sns-av' + (small ? ' sm' : '');
@@ -4944,8 +5011,17 @@
       if (q){ q.faved = true; snsSave(posts); }
       snsRefreshCard(p.id);
     }, 'アルバムに保存');
-    if (p.who === 'user' && !snsTyping[p.id] && !(p.replies || []).some(r => r.who === 'char')){
-      mk('🔄 反応をもらう', '', () => snsCharReply(p.id));
+    // 🔄 やり直しボタン：返事が来ていないときだけ出す
+    //  ・私の投稿に、まだ彼の反応がない → 「反応をもらう」
+    //  ・リプ欄の最後が私のリプのまま（彼の返事が止まった） → 「返事をもらう」
+    if (!snsTyping[p.id]){
+      const reps = p.replies || [];
+      const last = reps[reps.length - 1];
+      if (p.who === 'user' && !reps.some(r => r.who === 'char')){
+        mk('🔄 反応をもらう', '', () => snsCharReply(p.id));
+      } else if (last && last.who === 'user'){
+        mk('🔄 返事をもらう', '', () => snsCharReply(p.id));
+      }
     }
     main.appendChild(acts);
 
