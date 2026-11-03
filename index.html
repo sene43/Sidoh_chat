@@ -986,6 +986,7 @@
     snsSlot: KP + 'snsslot',
     snsFol: KP + 'snsfol',
     snsFreq: KP + 'snsfreq',
+    snsSeedHist: KP + 'snsseedhist',
     snsSeen: KP + 'snsseen'
   };
 
@@ -1492,7 +1493,8 @@
       if (!(ct && (ct.rp || ct.solo))){
         let sc = '';
         try { sc = snsChatContext(); } catch(e){}
-        if (sc) out += '\n\n【ふたりのSNS（タイムライン）での最近のやりとり（あなたも見て知っていること。わざわざ話題にしなくていいが、触れられたら自然に答える）】\n' + sc;
+        if (sc) out += '\n\n【ふたりのSNS（タイムライン）での最近のやりとり（あなたも見て知っていること。わざわざ話題にしなくていいが、触れられたら自然に答える）】\n' + sc +
+          '\n※SNSの投稿は人に見せる用に短く書いたもので、省略や脚色がありうる。実際に何があったかは、会話履歴・思い出・頭の中のメモの方が正しい。食い違う時はそちらを優先し、投稿の書き方を実際の出来事の根拠にしない。';
       }
     }
     out += '\n\n【記憶についての約束（厳守）】過去のことを聞かれた時は、ここまでに書かれている情報と会話履歴にあることだけを根拠にする。見つからないこと・はっきり覚えていないことを、覚えているふりをして作り話で埋めない。思い出せない時は「ごめん、そこちょっと曖昧かも。どんなだったっけ？」のように、キャラクターらしく正直に聞き返すこと。';
@@ -1607,7 +1609,7 @@
       d.appendChild(tm);
     }
     chatEl.appendChild(d);
-    if (scroll === 'top') scrollToMsg(d);
+    if (scroll === 'top') scrollToMsg(node);
     else if (scroll !== false) scrollBottom();
     return d;
   }
@@ -4374,7 +4376,7 @@
   }
 
   // ネタにする最近の会話（📓物語モード・🔒独立の部屋は使わない）
-  function snsRecentConv(maxLines){
+  function snsRecentConv(maxLines, maxLen){
     const cname = snsCname(), uname = snsUname();
     const since = Date.now() - 36 * 3600 * 1000;
     let all = [];
@@ -4391,7 +4393,7 @@
     });
     all.sort((a, b) => (a.ts || 0) - (b.ts || 0));
     return all.slice(-(maxLines || 16)).map(m =>
-      (m.role === 'model' ? cname : uname) + '：' + (m.text.length > 120 ? m.text.slice(0, 120) + '…' : m.text)
+      (m.role === 'model' ? cname : uname) + '：' + (m.text.length > (maxLen || 120) ? m.text.slice(0, maxLen || 120) + '…' : m.text)
     ).join('\n');
   }
   function snsRecentPostsText(n, maxLen){
@@ -4427,6 +4429,32 @@
     '相手について、自分だけが知っていると思っていること'
   ];
   function snsPick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // 最近使った切り口は避けて引く（季節・音楽…と同じパターンが続かないように）
+  function snsSeedHist(){
+    try { const a = JSON.parse(get(LS.snsSeedHist,'[]')); return Array.isArray(a) ? a : []; } catch(e){ return []; }
+  }
+  function snsPickFresh(arr){
+    const used = snsSeedHist();
+    const fresh = arr.filter(s => used.indexOf(s) === -1);
+    return snsPick(fresh.length ? fresh : arr);
+  }
+  function snsRememberSeed(s){
+    if (!s) return;
+    const a = snsSeedHist().filter(x => x !== s);
+    a.push(s);
+    try { localStorage.setItem(LS.snsSeedHist, JSON.stringify(a.slice(-7))); } catch(e){}
+  }
+
+  // 思い出ノート＋頭の中メモから、ネタになりそうな1行をランダムに（見出しや短すぎる行は除く）
+  function snsPickMemoryLine(){
+    const lines = (get(LS.mem,'') + '\n' + get(LS.amem,'')).split('\n').map(l => l.trim())
+      .filter(l => l.replace(/^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\s*/, '').length >= 10 && !/^[【#■◆●\[]/.test(l));
+    if (!lines.length) return '';
+    const used = snsSeedHist();
+    const fresh = lines.filter(l => used.indexOf('mem:' + l) === -1);
+    return snsPick(fresh.length ? fresh : lines);
+  }
 
   // 頭の中メモから、新しい方を数行＋古い方からランダムに数行（毎回ちがう思い出がネタになる）
   function snsSampleLines(text, recentN, randomN){
@@ -4466,6 +4494,7 @@
     out += '\n・ふたりの会話をそのまま引用したり、' + uname + 'が人に知られたくなさそうなことを書いたりしない。惚気や気持ちは「匂わせ」くらいの距離感で。';
     out += '\n・ここに名前の出ていない人物（ほかのキャラクター・有名人など）を、知り合いとして勝手に登場させない。';
     out += '\n・ふたりの過去の出来事に触れる時は、ここに書かれている情報と最近の会話にあることだけを根拠にし、作り話はしない。';
+    out += '\n・【事実を変えない（厳守）】会話や記憶にある出来事を書く時は、誰と・どこで・何をしたか・どちらが言い出したかを変えない。ふたりで一緒にしたことを、ひとりでしたこと・偶然見つけたことに書き換えない。一緒にしたことは、名前を伏せた匂わせ（「誰かさんと」「連れと」など。言い方はキャラクターらしく）で書く。';
     if (get(LS.world,'app') === 'together') out += '\n・ふたりは同じ家で一緒に暮らしている。';
     const ngw = get(LS.ngwords,'').split('\n').map(s => s.trim()).filter(Boolean);
     if (ngw.length) out += '\n\n【使わない言葉（厳守）】次の言い回しは使わない：「' + ngw.join('」「') + '」';
@@ -4676,20 +4705,37 @@
     snsSetNote('✍️ ' + snsCname() + 'がつぶやきを考え中…');
     try {
       const uname = snsUname();
-      const conv = snsRecentConv(6);              // つぶやきは直近の様子が分かれば十分
+      const conv = snsRecentConv(24, 60);         // 1通は短く、そのぶん通数を多めに（その日の出来事と「誰と何をしたか」が見えるように）
       const recent = snsRecentPostsText(12, 45);   // 話題かぶり防止用（短く切って12件）
       const fol = snsFollowers();
       const h = new Date().getHours();
       const band = (h >= 5 && h < 11) ? '朝' : (h >= 11 && h < 17) ? '昼' : (h >= 17 && h < 23) ? '夜' : '深夜';
       const ann = annivContext();
-      let theme;
+      let theme, seed = '';
       if (ann && Math.random() < 0.6){
         theme = '近づいている記念日にちなんだ投稿（' + ann + '）';
       } else {
         const r = Math.random();
-        theme = r < 0.5 ? uname + 'がそばにいない時間の、あなた自身の日常の一コマ。今回の切り口：' + snsPick(SNS_SEEDS_DAILY) + '。' + uname + 'の話は出さなくてもいい'
-          : r < 0.85 ? '本人には直接言っていない本音を、名前は出さずに独り言として。今回の切り口：' + snsPick(SNS_SEEDS_HEART) + '。重くなりすぎず、本人が読んだらキュンとするくらいの温度で'
-          : '最近の暮らしや出来事をふまえた、さりげない惚気・匂わせ（フォロワーに向けた書き方で）。今回の切り口：' + snsPick(SNS_SEEDS_DAILY.concat(SNS_SEEDS_HEART));
+        const memLine = snsPickMemoryLine();
+        if (r < 0.36){
+          seed = snsPickFresh(SNS_SEEDS_DAILY);
+          theme = uname + 'がそばにいない時間の、あなた自身の日常の一コマ。今回の切り口：' + seed + '。' + uname + 'の話は出さなくてもいい。' +
+            '会話ログに出てくる出来事（ふたりでしたこと）はこの切り口では使わず、ログにない、あなたひとりの時間の出来事にする';
+        } else if (r < 0.62){
+          seed = snsPickFresh(SNS_SEEDS_HEART);
+          theme = '本人には直接言っていない本音を、名前は出さずに独り言として。今回の切り口：' + seed + '。重くなりすぎず、本人が読んだらキュンとするくらいの温度で';
+        } else if (r < 0.78 && memLine){
+          seed = 'mem:' + memLine;
+          theme = 'ふと思い出した、ふたりの思い出のワンシーン（名前を伏せた匂わせで）。今回の思い出：「' + memLine + '」。' +
+            '書かれている事実（いつ・どこで・誰と・何を）は変えず、書かれていないことは足さない。SNSに書いても' + uname + 'が困らない範囲で';
+        } else if (r < 0.92 && conv){
+          seed = 'today';
+          theme = '会話ログにある、ここ1〜2日にふたりで実際にしたこと・話したことの中から1つ選んで、名前を伏せた匂わせで。' +
+            '出来事の事実（一緒にしたこと・どこで・何を）はログのとおりに書き、ひとりでしたことや偶然の出来事に変えない。会話の文面は引用しない';
+        } else {
+          seed = snsPickFresh(SNS_SEEDS_DAILY.concat(SNS_SEEDS_HEART));
+          theme = '最近の暮らしや出来事をふまえた、さりげない惚気・匂わせ（フォロワーに向けた書き方で）。今回の切り口：' + seed;
+        }
       }
       let wx = '';
       if (flag0(LS.weather)) { try { wx = await weatherContext(); } catch(e){} }
@@ -4704,7 +4750,8 @@
         '\n・フォロワー全員に向けた独り言のつぶやきとして書く。' + uname + 'に話しかけたり、' + uname + 'の発言に答えたりしない（それはチャットでやること）。' +
         '\n・投稿の中で' + uname + 'の名前は出さない。触れる時は名前を伏せた匂わせにする。' +
         '\n・「今回の切り口」に沿って、具体的なもの（料理名・場所・物・数字・固有の出来事など）を1つ以上入れる。ぼんやりした感想だけで終わらせない。' +
-        '\n・毎回同じ締め方（「帰りを待ってる」「迎える準備をする」など）にしない。ペットや相棒の話も、切り口に関係ない時は無理に入れない。';
+        '\n・毎回同じ締め方（「帰りを待ってる」「迎える準備をする」など）にしない。ペットや相棒の話も、切り口に関係ない時は無理に入れない。' +
+        '\n・季節・天気・気温の話は、切り口が季節や天気の時以外はメインにしない（添えるとしても一言まで）。音楽・本・動画の話も、切り口がそれの時以外は持ち出さない。';
 
       const baseP = (extra) => {
         let p = 'いまは' + nowStr() + '（' + band + '）。\n';
@@ -4755,6 +4802,7 @@
       post.replies = snsFolComments(parsed, ts);
       posts.unshift(post);
       snsSave(posts);
+      snsRememberSeed(seed);
       snsSetNote('');
       if (snsSheet.classList.contains('show')){ snsRender(); snsMarkSeen(); }
       else snsUpdateBadge();
