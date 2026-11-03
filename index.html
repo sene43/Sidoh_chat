@@ -1562,6 +1562,7 @@
   }
 
   function renderAll(){
+    updateHeaderAvatar();   // 空っぽの部屋でも、ヘッダーのアイコンは必ず更新する
     chatEl.innerHTML = '';
     lastDateKey = null;
     const visible = history.filter(m => !m.hidden);
@@ -1580,7 +1581,6 @@
       else el = addBubble(m.role === 'model' ? 'ai' : 'user', m.role === 'model' ? stripMd(m.text) : m.text, false, m.ts);
       if (el) el.dataset.hidx = idx;
     });
-    updateHeaderAvatar();
     scrollBottom();
   }
 
@@ -1609,7 +1609,7 @@
       d.appendChild(tm);
     }
     chatEl.appendChild(d);
-    if (scroll === 'top') scrollToMsg(node);
+    if (scroll === 'top') scrollToMsg(d);
     else if (scroll !== false) scrollBottom();
     return d;
   }
