@@ -693,6 +693,16 @@
   </div>
 
   <div class="field" data-pane="conn">
+    <label for="thinkSel">🧠 考える深さ（Gemini 3・4系）</label>
+    <select id="thinkSel">
+      <option value="">おまかせ（モデルの標準）</option>
+      <option value="medium">ふつう（medium）</option>
+      <option value="low">少なめ（low・節約）</option>
+    </select>
+    <div class="hint">返事の前に裏で「考える」量だよ。考えたぶんも出力として課金されるから、少なめにするとAPI代が下がりやすい（そのかわり深い読み取りは少し浅くなるかも）。標準はモデルごとに違って、Hydrogenは高め、Carbon・Argonは中くらい。対応していないモデルは自動でおまかせに戻して送るよ。この設定はこのアプリ（キャラ）だけに効くよ。</div>
+  </div>
+
+  <div class="field" data-pane="conn">
     <label for="imgModel">画像モデル名</label>
     <input type="text" id="imgModel" placeholder="gemini-2.5-flash-image">
     <button type="button" class="btn line" id="findImgBtn" style="margin-top:8px;padding:9px;font-size:13px">🔍 使える画像モデルを探す</button>
@@ -947,6 +957,7 @@
     model: KP + 'model',
     modelList: KP + 'modellist',
     safety: KP + 'safety',
+    thinkLv: KP + 'thinklv',
     world: KP + 'world',
     imgModel: KP + 'imgmodel',
     name:  KP + 'charname',
@@ -987,6 +998,8 @@
     snsFol: KP + 'snsfol',
     snsFreq: KP + 'snsfreq',
     snsSeedHist: KP + 'snsseedhist',
+    snsAnnivAt: KP + 'snsannivat',
+    snsAnnivAng: KP + 'snsannivang',
     snsSeen: KP + 'snsseen'
   };
 
@@ -1291,6 +1304,43 @@
       .replace(/\*\*/g, '');
   }
 
+  // Argonなど一部のモデルが、内部の「思考過程」の見出しを本文に漏らすことがある
+  // （例：「模型的思考过程（隐藏）」）。見出しだけの行と、中国語（簡体字）だけの短い行を取り除く。
+  // セリフ本文には触らない。全部消えてしまう時は元のまま返す（空返事にしないため）
+  const THOUGHT_LABEL_ZH = /^[\s*#>\-•・【\[（(「『"]*(?:(?:模型|AI|助手|角色|モデル)(?:的|の)?|(?:the\s+)?model'?s?\s+)?(?:思考|思维|思維|推理)(?:过程|過程|プロセス)[\s*】\]）)」』"]*(?:[（(\[【][^）)\]】\n]{0,12}[）)\]】])?[\s*:：]*$/i;
+  const THOUGHT_LABEL_EN = /^[\s*#>\-•]*(?:the\s+model'?s?\s+)?(?:thinking|thought|reasoning)\s+process[\s*:：]*(?:[（(\[][^)）\]\n]{0,12}[)）\]])?[\s*:：]*$/i;
+  const THOUGHT_PREFIX_ZH = /^[\s*#>]*(?:(?:模型|AI|助手|モデル)(?:的|の)?)?(?:思考|思维|思維|推理)(?:过程|過程)\s*[（(][^）)\n]{0,10}[）)][\s*:：]*(?=\S)/;
+  const SIMPLIFIED_ONLY = '过这们说为吗没还对时现开种觉样让谁头问关间题认应该书买儿爱听隐处';
+  function countSimplified(s){
+    let n = 0;
+    for (const ch of s) if (SIMPLIFIED_ONLY.indexOf(ch) !== -1) n++;
+    return n;
+  }
+  function stripThoughtLabels(text){
+    if (!text || typeof text !== 'string') return text;
+    const lines = text.split('\n');
+    let changed = false;
+    const out = [];
+    let seenBody = false;
+    lines.forEach(line => {
+      const t = line.trim();
+      if (!t){ out.push(line); return; }
+      if (t.length <= 40){
+        if (THOUGHT_LABEL_ZH.test(t) || THOUGHT_LABEL_EN.test(t)){ changed = true; return; }
+        if (!/[ぁ-んァ-ヶ]/.test(t) && countSimplified(t) >= 2){ changed = true; return; }
+      }
+      if (!seenBody && THOUGHT_PREFIX_ZH.test(t)){
+        line = line.replace(THOUGHT_PREFIX_ZH, '');
+        changed = true;
+      }
+      seenBody = true;
+      out.push(line);
+    });
+    if (!changed) return text;
+    const res = out.join('\n').replace(/^\s*\n+/, '').replace(/\n{3,}/g, '\n\n').trim();
+    return res || text;
+  }
+
   // 口癖ブロッカー：紫堂さんの直近の返事で3回以上くり返している言い回しを見つける（通信なし）
   function repeatedPhrases(){
     const norm = s => (s || '')
@@ -1531,6 +1581,9 @@
     if (/gemma/i.test(get(LS.model,''))){
       out += '\n\n【出力ルール（厳守）】1文字目から日本語の本文（セリフと（ト書き））だけを書き始めること。英語での思考・下書き・チェックリスト・分析・箇条書きは、どんな形でも絶対に出力しない。本文は一度だけ書く（同じ文章を二度繰り返さない）。「Action:」「Dialogue:」のようなラベルや見出し、行頭の記号（*・-）も一切使わない。';
     }
+    if (/argon/i.test(get(LS.model,''))){
+      out += '\n\n【出力ルール（厳守）】返事は1文字目からキャラクターの本文だけを書く。「思考過程」などの見出し・ラベル、中国語や英語の注釈・分析メモは、どんな形でも絶対に出力しない。';
+    }
     return out;
   }
 
@@ -1578,7 +1631,7 @@
       if (m.imgp){ addPromptBubble(m.text, false); return; }
       let el;
       if (m.diary) el = addDiaryBubble(m.text, false, m.label, m.ts);
-      else el = addBubble(m.role === 'model' ? 'ai' : 'user', m.role === 'model' ? stripMd(m.text) : m.text, false, m.ts);
+      else el = addBubble(m.role === 'model' ? 'ai' : 'user', m.role === 'model' ? stripThoughtLabels(stripMd(m.text)) : m.text, false, m.ts);
       if (el) el.dataset.hidx = idx;
     });
     scrollBottom();
@@ -1726,6 +1779,7 @@
   const JPY_RATE = 150; // 1ドル＝何円で換算するか（ここを書き換えれば調整できるよ）
   // 期間限定セールの終了日時（この時刻より前はセール価格で計算）
   const PROMO_UNTIL_2026 = new Date(2027, 0, 1).getTime();   // 2026/12/31まで半額 → 2027/1/1から正規料金
+  const GEMINI4_INTRO_UNTIL = new Date(2026, 11, 1).getTime();  // Carbon・Argonの導入価格は2026/11/30まで → 12/1から正規料金
 
   // [モデル名の判定, 入力単価, 出力単価, (任意)セール情報]  ※100万トークンあたりUSD
   const MODEL_PRICES = [
@@ -1736,7 +1790,10 @@
     [/gemini-3\.5-flash/i,       1.50, 9.00],
     [/gemini-3\.[678]-flash(?!-lite)/i, 1.50, 7.50, { until: PROMO_UNTIL_2026, in: 0.75, out: 3.75 }],  // 3.6/3.7/3.8は同料金・年内は半額
     [/gemini-2\.5-pro/i,         1.25, 10.0],
-    [/argon/i,                   4.00, 20.0, { until: PROMO_UNTIL_2026, in: 2.00, out: 10.0 }],  // Gemini 4 Argon・年内はプロモ半額
+    [/argon/i,                   4.00, 20.0, { until: GEMINI4_INTRO_UNTIL, in: 2.00, out: 10.0 }],  // Gemini 4 Argon・11/30まで導入価格、12/1から倍
+    [/carbon/i,                  4.00, 20.0, { until: GEMINI4_INTRO_UNTIL, in: 2.00, out: 10.0 }],  // Gemini 4 Carbon・Argonと同じ
+    [/hydrogen/i,                1.50, 7.50],   // Gemini 4 Hydrogen
+    [/neon/i,                    3.00, 15.0],   // Gemini 4 Neon（11/18登場。単価は二次情報なので公式ページで要再確認）
     [/haiku/i,                   1.00, 5.00],
     [/sonnet-5/i,                2.00, 10.0],
     [/sonnet/i,                  3.00, 15.0],
@@ -1755,7 +1812,8 @@
         let pin = e[1], pout = e[2];
         if (e[3] && Date.now() < e[3].until){ pin = e[3].in; pout = e[3].out; }  // セール期間中は自動でセール価格
         const cached = Math.min(cachedTok || 0, inTok);
-        return ((inTok - cached) * pin + cached * pin * 0.1 + outTok * pout) / 1000000;
+        const cf = /hydrogen|neon/i.test(model) ? 0.05 : 0.1;   // Hydrogen・Neonはキャッシュ分が95%引き
+        return ((inTok - cached) * pin + cached * pin * cf + outTok * pout) / 1000000;
       }
     }
     return null; // 単価表にないモデルは料金不明（トークン数だけ数える）
@@ -1813,7 +1871,7 @@
     // 会話履歴を共通形式に
     const turns = history.filter(m => !m.imgp).slice(-histDepth()).map(m => ({
       role: m.role === 'model' ? 'assistant' : 'user',
-      text: m.text
+      text: m.role === 'model' ? stripThoughtLabels(m.text) : m.text
     }));
     if (extraHiddenPrompt) turns.push({ role:'user', text: extraHiddenPrompt });
 
@@ -1879,7 +1937,7 @@
       if (!apiKey) throw new Error('GeminiのAPIキーが未設定だよ。⚙︎で入れてね');
       const msgs = history.filter(m => !m.imgp).slice(-histDepth()).map(m => ({
         role: m.role,
-        parts: [{ text: m.text }]
+        parts: [{ text: m.role === 'model' ? stripThoughtLabels(m.text) : m.text }]
       }));
       if (extraHiddenPrompt){
         msgs.push({ role:'user', parts:[{ text: extraHiddenPrompt }] });
@@ -1911,6 +1969,13 @@
       if (flag0(LS.search) && /gemini/i.test(model)){
         body.tools = [{ google_search: {} }];
       }
+      // 🧠 考える深さ（Gemini 3・4系だけ。2.5系やGemmaは別の仕組みなので触らない）
+      {
+        const lv = get(LS.thinkLv,'');
+        if ((lv === 'low' || lv === 'medium') && /gemini-[3-9]/i.test(model)){
+          body.generationConfig = { thinkingConfig: { thinkingLevel: lv } };
+        }
+      }
       if (/gemma/i.test(model) && !(curThread() && curThread().rp)){
         for (let i = msgs.length - 1; i >= 0; i--){
           if (msgs[i].role === 'user'){
@@ -1922,7 +1987,7 @@
       url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
         encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(apiKey);
       headers = { 'Content-Type':'application/json' };
-      extract = d => { try { return d.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){ return ''; } };
+      extract = d => { try { return d.candidates[0].content.parts.filter(pp => !pp.thought).map(pp => pp.text || '').join(''); } catch(e){ return ''; } };
     }
 
     // 一時的なエラー（混雑・500系）は少し待って自動リトライ
@@ -1949,7 +2014,21 @@
 
     let data, reply;
     try {
-      const r1 = await runOnce(url, headers, body, extract);
+      let r1;
+      try {
+        r1 = await runOnce(url, headers, body, extract);
+      } catch(e0){
+        // 「考える深さ」を受け付けないモデルだった時は、設定なし（おまかせ）でもう一度
+        if (provider === 'gemini' && body.generationConfig && body.generationConfig.thinkingConfig &&
+            /thinking|level|generation_?config/i.test(e0.message)){
+          delete body.generationConfig;
+          r1 = await runOnce(url, headers, body, extract);
+          if (!window.__thinkWarned){
+            window.__thinkWarned = true;
+            addBubble('error','🧠 このモデルは「考える深さ」の指定を受け付けなかったので、おまかせで送ったよ（このお知らせは1回だけ）');
+          }
+        } else throw e0;
+      }
       data = r1.data; reply = r1.reply;
       // 使用トークンを記録（各社の返事に正確な数が入っている）
       try {
@@ -1967,7 +2046,7 @@
         const gKey = get(LS.key,'');
         let convo = fullSystemPrompt() + '\n\n【これまでの会話】\n';
         history.filter(m => !m.imgp).slice(-histDepth()).forEach(m => {
-          convo += (m.role === 'model' ? '相手' : 'ユーザー') + '：' + m.text + '\n';
+          convo += (m.role === 'model' ? '相手' : 'ユーザー') + '：' + (m.role === 'model' ? stripThoughtLabels(m.text) : m.text) + '\n';
         });
         if (extraHiddenPrompt) convo += 'ユーザー：' + extraHiddenPrompt + '\n';
         convo += '\n上記の人物設定になりきり、この会話の続きとして、あなた（相手側）の次の返事の本文だけを出力してください。';
@@ -2002,6 +2081,7 @@
           ({'＝':'=','？':'?','＆':'&','／':'/','：':':','．':'.','＋':'+'}[c])));
       reply = reply.replace(/\n{3,}/g, '\n\n'); // 空行の連発は2行までに圧縮
       reply = stripMd(reply);                      // **太字** などの記号を取り除く
+      reply = stripThoughtLabels(reply);           // 「思考過程」の見出し漏れを取り除く
     }
     if (reply) markModelUsed(model);
     if (reply && provider === 'gemini' && /gemma/i.test(model)) reply = stripLeak(reply);
@@ -2558,24 +2638,29 @@
   }
 
   /* ---------- anniversary & weather ---------- */
-  function annivContext(){
-    const lines = get(LS.anniv,'').split('\n');
+  // 今日〜7日先の記念日だけを [{name, diff}] で返す（diff=0が当日）
+  function annivNear(){
     const list = [];
-    lines.forEach(l => {
+    get(LS.anniv,'').split('\n').forEach(l => {
       const m = l.match(/(\d{1,2})\s*[\/\-月]\s*(\d{1,2})日?\s*(.+)/);
       if (m) list.push({mo:+m[1], da:+m[2], name:m[3].trim()});
     });
-    if (!list.length) return '';
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const notes = [];
+    const out = [];
     list.forEach(a => {
       let d = new Date(now.getFullYear(), a.mo-1, a.da);
       if (d < today) d = new Date(now.getFullYear()+1, a.mo-1, a.da);
       const diff = Math.round((d - today) / 86400000);
-      if (diff === 0) notes.push('今日は「' + a.name + '」！ちゃんとお祝いして。');
-      else if (diff <= 7) notes.push('「' + a.name + '」まであと' + diff + '日。さりげなく楽しみにしてる気持ちを出してもいい。');
+      if (diff <= 7) out.push({ name: a.name, diff: diff });
     });
+    return out;
+  }
+
+  function annivContext(){
+    const notes = annivNear().map(a => a.diff === 0
+      ? '今日は「' + a.name + '」！ちゃんとお祝いして。'
+      : '「' + a.name + '」まであと' + a.diff + '日。さりげなく楽しみにしてる気持ちを出してもいい。');
     return notes.length ? '記念日情報：' + notes.join(' ') : '';
   }
 
@@ -3467,6 +3552,7 @@
     document.getElementById('imgModel').value = get(LS.imgModel,'gemini-2.5-flash-image');
     document.getElementById('imgLook').value = get(LS.imgLook,'');
     document.getElementById('safetySel').value = get(LS.safety,'default');
+    document.getElementById('thinkSel').value = get(LS.thinkLv,'');
     document.getElementById('worldSel').value = get(LS.world,'app');
     const dt = curThread();
     document.getElementById('depthSel').value = String((dt && dt.depth) || 40);
@@ -3573,6 +3659,7 @@
     localStorage.setItem(LS.imgModel, document.getElementById('imgModel').value.trim() || 'gemini-2.5-flash-image');
     localStorage.setItem(LS.imgLook, document.getElementById('imgLook').value.trim());
     localStorage.setItem(LS.safety, document.getElementById('safetySel').value);
+    localStorage.setItem(LS.thinkLv, document.getElementById('thinkSel').value);
     localStorage.setItem(LS.world, document.getElementById('worldSel').value);
     const dts = curThread();
     if (dts){ dts.depth = parseInt(document.getElementById('depthSel').value, 10); saveThreads(); }
@@ -4420,6 +4507,15 @@
     '天気や体調、部屋の中のちょっとした変化',
     '自分の趣味や特技に関すること'
   ];
+  // ふたりの暮らし・相手やペットの気配がにじむ切り口
+  const SNS_SEEDS_LIFE = [
+    'ふたりで過ごした時間のちょっとした一コマ（一緒に食べたもの・観たもの・やりとりの小ネタ）',
+    '相手の口ぐせや、思わず笑ってしまった相手の言動',
+    'ペット・動物の様子（キャラ設定・思い出・会話に出てくる子だけ。名前や性格はそこに書かれているとおりに。どこにも出てこなければ、相手の好きな動物の話にする）',
+    'ペット・動物と相手のやりとりで微笑ましかったこと（キャラ設定・思い出・会話に出てくる子だけ。いなければ、相手と動物にまつわる話にする）',
+    '相手の仕事や、いま頑張っていることを気にかけていること（会話やメモに書かれている範囲で）',
+    '相手の好きなもの（食べ物・趣味など）を見かけて、相手を思い浮かべたこと'
+  ];
   const SNS_SEEDS_HEART = [
     '相手の小さな癖や、気づいたら目で追っているところ',
     '相手のためにこっそり計画していること（次に行きたい場所・サプライズ・買ってあげたいもの）',
@@ -4447,9 +4543,38 @@
   }
 
   // 思い出ノート＋頭の中メモから、ネタになりそうな1行をランダムに（見出しや短すぎる行は除く）
-  function snsPickMemoryLine(){
+  // 記念日の投稿の「中身の切り口」。最近使ったものは避けて順番に回す
+  const SNS_ANNIV_ANGLES = [
+    '当日に向けて準備していること・こっそり用意しているもの',
+    '当日やりたいこと・一緒に食べたいもの・行きたい場所',
+    'この1年で増えたもの・変わった暮らし（部屋・習慣・持ち物など）',
+    '改めて「ここが好きだな」と思った相手の一面（名前は伏せて）',
+    '去年の今ごろの自分に言ってやりたいこと',
+    'プレゼントや手紙をどうするか、地味に悩んでいること',
+    '記念日が近づいて、何気ない日常の中でふと意識した瞬間',
+    'この1年でいちばん笑った出来事（記念日そのものの話以外）'
+  ];
+  const SNS_ANNIV_DAY = [
+    '朝いちばんに思ったこと・当日の始まり',
+    'この1年をひとことで振り返る',
+    'これからの1年でしたいこと・約束したいこと',
+    'あの日と今日を比べて変わったところ'
+  ];
+  function snsPickAnnivAngle(isDay){
+    let used = [];
+    try { used = JSON.parse(get(LS.snsAnnivAng,'[]')) || []; } catch(e){ used = []; }
+    const arr = isDay ? SNS_ANNIV_DAY : SNS_ANNIV_ANGLES;
+    const fresh = arr.filter(a => used.indexOf(a) === -1);
+    const pick = snsPick(fresh.length ? fresh : arr);
+    try { localStorage.setItem(LS.snsAnnivAng, JSON.stringify(used.filter(a => a !== pick).concat([pick]).slice(-6))); } catch(e){}
+    return pick;
+  }
+
+  // avoid：この手がかりを含む行は選ばない（記念日を書かない回に、記念日の思い出を拾わないため）
+  function snsPickMemoryLine(avoid){
     const lines = (get(LS.mem,'') + '\n' + get(LS.amem,'')).split('\n').map(l => l.trim())
-      .filter(l => l.replace(/^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\s*/, '').length >= 10 && !/^[【#■◆●\[]/.test(l));
+      .filter(l => l.replace(/^\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}\s*/, '').length >= 10 && !/^[【#■◆●\[]/.test(l))
+      .filter(l => !(avoid && avoid.length && relScore(avoid, l) >= 2));
     if (!lines.length) return '';
     const used = snsSeedHist();
     const fresh = lines.filter(l => used.indexOf('mem:' + l) === -1);
@@ -4538,11 +4663,11 @@
       body = { system_instruction: { parts: [{ text: sys }] }, contents: [{ role:'user', parts: parts }] };
       const ss = safetySettings();
       if (ss && !/gemma/i.test(model)) body.safetySettings = ss;
-      // 短いつぶやきは深く考えなくていいので「low」に（Gemini 3系のみ。初期設定はmedium）
-      if (thinkLow && /gemini-3/i.test(model)) body.generationConfig = { thinkingConfig: { thinkingLevel: 'low' } };
+      // 短いつぶやきは深く考えなくていいので「low」に（Gemini 3・4系。初期設定はモデルごとに違う）
+      if (thinkLow && /gemini-[3-9]/i.test(model)) body.generationConfig = { thinkingConfig: { thinkingLevel: 'low' } };
       url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(key);
       headers = { 'Content-Type':'application/json' };
-      extract = d => { try { return d.candidates[0].content.parts.map(pp => pp.text || '').join(''); } catch(e){ return ''; } };
+      extract = d => { try { return d.candidates[0].content.parts.filter(pp => !pp.thought).map(pp => pp.text || '').join(''); } catch(e){ return ''; } };
     }
 
     // 混雑・500系は少し待って自動リトライ（最大3回）
@@ -4608,7 +4733,7 @@
       } catch(e){}
       throw new Error(why || '返事が空だったよ');
     }
-    raw = stripMd(raw).replace(/\n{3,}/g, '\n\n');
+    raw = stripThoughtLabels(stripMd(raw)).replace(/\n{3,}/g, '\n\n');
     if (provider === 'gemini' && /gemma/i.test(model)){
       try { raw = stripLabels(stripLeak(raw)); } catch(e){}
     }
@@ -4710,32 +4835,64 @@
       const fol = snsFollowers();
       const h = new Date().getHours();
       const band = (h >= 5 && h < 11) ? '朝' : (h >= 11 && h < 17) ? '昼' : (h >= 17 && h < 23) ? '夜' : '深夜';
+      // 記念日のカウントダウンは「1日1回」（当日はお祝い1回）。中身は毎回ちがう切り口にする
       const ann = annivContext();
-      let theme, seed = '';
-      if (ann && Math.random() < 0.6){
-        theme = '近づいている記念日にちなんだ投稿（' + ann + '）';
+      const annNear = annivNear();
+      const annToday = annNear.some(a => a.diff === 0);
+      const lastAnn = parseInt(get(LS.snsAnnivAt,'0'), 10) || 0;
+      const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+      const useAnn = !!ann && lastAnn < dayStart.getTime() && Math.random() < 0.9;   // 今日まだ記念日の投稿をしていなければ
+      const annNameGrams = annNear.reduce((g, a) => g.concat(contentGrams(a.name)), []).filter(g => !/^(記念|念日|記念日)$/.test(g));
+      // 今日のカウントダウンが済んだ後の投稿は、記念日にまつわる話・思い出をネタにしない（例：「プロポーズ」が入った思い出の行）
+      const annGrams = (ann && !annToday && !useAnn) ? annNameGrams : [];
+      const annAvoid = annGrams.length
+        ? '（近づいている記念日（' + annNear.map(a => a.name).join('・') + '）の話題・カウントダウン・それにまつわる思い出話は、今回は書かない）'
+        : '';
+      let theme, seed = '', annAngle = '';
+      if (useAnn){
+        seed = 'anniv';
+        annAngle = snsPickAnnivAngle(annToday);
+        // これまでの記念日投稿（数える部分以外が同じにならないよう、全文で見せる）
+        const prevAnn = snsLoad().filter(p => p.who === 'char' && (Date.now() - (p.ts || 0)) < 10 * 86400000 &&
+          (p.anniv || /あと\s*[0-9０-９一二三四五六七]+\s*日|記念日/.test(p.text || '') || (annNameGrams.length && relScore(annNameGrams, p.text || '') >= 2)))
+          .slice(0, 6).map(p => '・' + (p.text || '').replace(/\s+/g, ' ')).join('\n');
+        theme = (annToday ? '今日の記念日をお祝いする投稿（' : '近づいている記念日のカウントダウン投稿（') + ann + '）。' +
+          (annToday ? '' : '「◯◯まであと◯日」のように数えるのは入れる。') +
+          'そのうえで、今回の中身はこの切り口で書く：' + annAngle + '。' +
+          (prevAnn ? '\nこれまでの記念日の投稿（使用済み）：\n' + prevAnn +
+            '\nここに出てきたエピソード・思い出話・言い回し・締め方は使わない。数える部分以外は、まったく別の内容にする。' : '') +
+          '\n記念日にまつわる昔の出来事（あの日の経緯など）は、使用済みの投稿にすでに書かれていたら二度と書かない';
       } else {
         const r = Math.random();
-        const memLine = snsPickMemoryLine();
-        if (r < 0.36){
+        let memLine = snsPickMemoryLine();
+        if (memLine && annGrams.length && relScore(annGrams, memLine) >= 2){
+          memLine = snsPickMemoryLine(annGrams);
+        }
+        // 配分（2026/11 祐佳里と相談）：約6割は祐佳里の気配あり、約4割は彼ひとりの日常
+        //   ひとりの日常40% ／ チャットで話したこと22% ／ ふたりの暮らし・ペット16% ／ 本音12% ／ 思い出10%
+        if (r < 0.40){
           seed = snsPickFresh(SNS_SEEDS_DAILY);
           theme = uname + 'がそばにいない時間の、あなた自身の日常の一コマ。今回の切り口：' + seed + '。' + uname + 'の話は出さなくてもいい。' +
             '会話ログに出てくる出来事（ふたりでしたこと）はこの切り口では使わず、ログにない、あなたひとりの時間の出来事にする';
-        } else if (r < 0.62){
+        } else if (r < 0.62 && conv){
+          seed = 'today';
+          theme = '会話ログにある、ここ1〜2日にふたりで実際にしたこと・話したこと・' + uname + 'から聞いた話の中から1つ選んで、名前を伏せた匂わせで。' +
+            '出来事の事実（一緒にしたこと・どこで・何を・誰が言ったか）はログのとおりに書き、ひとりでしたことや偶然の出来事に変えない。会話の文面は引用しない';
+        } else if (r < 0.78 || (r < 0.62 && !conv)){
+          seed = snsPickFresh(SNS_SEEDS_LIFE);
+          theme = 'ふたりの暮らしや、' + uname + 'とのことがにじむ投稿（名前を伏せた匂わせで、フォロワーにちょっと惚気るくらいの温度）。今回の切り口：' + seed;
+        } else if (r < 0.90){
           seed = snsPickFresh(SNS_SEEDS_HEART);
           theme = '本人には直接言っていない本音を、名前は出さずに独り言として。今回の切り口：' + seed + '。重くなりすぎず、本人が読んだらキュンとするくらいの温度で';
-        } else if (r < 0.78 && memLine){
+        } else if (memLine){
           seed = 'mem:' + memLine;
           theme = 'ふと思い出した、ふたりの思い出のワンシーン（名前を伏せた匂わせで）。今回の思い出：「' + memLine + '」。' +
             '書かれている事実（いつ・どこで・誰と・何を）は変えず、書かれていないことは足さない。SNSに書いても' + uname + 'が困らない範囲で';
-        } else if (r < 0.92 && conv){
-          seed = 'today';
-          theme = '会話ログにある、ここ1〜2日にふたりで実際にしたこと・話したことの中から1つ選んで、名前を伏せた匂わせで。' +
-            '出来事の事実（一緒にしたこと・どこで・何を）はログのとおりに書き、ひとりでしたことや偶然の出来事に変えない。会話の文面は引用しない';
         } else {
-          seed = snsPickFresh(SNS_SEEDS_DAILY.concat(SNS_SEEDS_HEART));
-          theme = '最近の暮らしや出来事をふまえた、さりげない惚気・匂わせ（フォロワーに向けた書き方で）。今回の切り口：' + seed;
+          seed = snsPickFresh(SNS_SEEDS_LIFE);
+          theme = 'ふたりの暮らしや、' + uname + 'とのことがにじむ投稿（名前を伏せた匂わせで）。今回の切り口：' + seed;
         }
+        if (annAvoid) theme += annAvoid;
       }
       let wx = '';
       if (flag0(LS.weather)) { try { wx = await weatherContext(); } catch(e){} }
@@ -4750,7 +4907,7 @@
         '\n・フォロワー全員に向けた独り言のつぶやきとして書く。' + uname + 'に話しかけたり、' + uname + 'の発言に答えたりしない（それはチャットでやること）。' +
         '\n・投稿の中で' + uname + 'の名前は出さない。触れる時は名前を伏せた匂わせにする。' +
         '\n・「今回の切り口」に沿って、具体的なもの（料理名・場所・物・数字・固有の出来事など）を1つ以上入れる。ぼんやりした感想だけで終わらせない。' +
-        '\n・毎回同じ締め方（「帰りを待ってる」「迎える準備をする」など）にしない。ペットや相棒の話も、切り口に関係ない時は無理に入れない。' +
+        '\n・毎回同じ締め方（「帰りを待ってる」「迎える準備をする」など）にしない。ペットの話で毎回締めるのもしない（切り口がペットの時は主役にしていい）。' +
         '\n・季節・天気・気温の話は、切り口が季節や天気の時以外はメインにしない（添えるとしても一言まで）。音楽・本・動画の話も、切り口がそれの時以外は持ち出さない。';
 
       const baseP = (extra) => {
@@ -4795,7 +4952,7 @@
         if (lower < now - 60000) ts = lower + Math.floor(Math.random() * (now - lower - 60000));
       }
       const post = {
-        id: snsId(), who: 'char', text: parsed.main, ts: ts, at: now,
+        id: snsId(), who: 'char', text: parsed.main, ts: ts, at: now, anniv: seed === 'anniv' || undefined,
         likes: fol.length ? snsRand(Math.max(1, fol.length - 1), fol.length + 6) : snsRand(4, 28),
         replies: []
       };
@@ -4803,6 +4960,7 @@
       posts.unshift(post);
       snsSave(posts);
       snsRememberSeed(seed);
+      if (seed === 'anniv'){ try { localStorage.setItem(LS.snsAnnivAt, String(Date.now())); } catch(e){} }
       snsSetNote('');
       if (snsSheet.classList.contains('show')){ snsRender(); snsMarkSeen(); }
       else snsUpdateBadge();
@@ -4827,17 +4985,25 @@
     if (st.d !== si.dk || !Array.isArray(st.s)) st = { d: si.dk, s: [] };
     if (st.s.indexOf(si.slot) !== -1) return;
     if (freq === '1' && st.s.length) return;
+    // 「考え中」の付箋：3分以内なら、別の画面（Safariのタブ等）で考え中かもしれないので待つ。
+    // 3分たっても「済み」になっていない付箋は、途中でアプリが閉じられたものとみなしてやり直す
+    const run = (st.run && typeof st.run === 'object') ? st.run : {};
+    if (run[si.slot] && Date.now() - run[si.slot] < 3 * 60000) return;
     snsAutoRunning = true;
-    st.s.push(si.slot);
+    run[si.slot] = Date.now();
+    st.run = run;
     try { localStorage.setItem(LS.snsSlot, JSON.stringify(st)); } catch(e){}
     const ok = await snsGeneratePost(false, si.start);
-    if (!ok){
-      // 失敗した時は枠を戻して、次に開いた時にもう一度
-      try {
-        st.s = st.s.filter(x => x !== si.slot);
-        localStorage.setItem(LS.snsSlot, JSON.stringify(st));
-      } catch(e){}
-    }
+    // つぶやきが完成してから「済み」の印をつける（失敗した時は付箋だけはがして、次に開いた時にもう一度）
+    try {
+      let cur = {};
+      try { cur = JSON.parse(get(LS.snsSlot,'{}')) || {}; } catch(e){ cur = {}; }
+      if (cur.d !== si.dk || !Array.isArray(cur.s)) cur = { d: si.dk, s: [] };
+      if (!cur.run || typeof cur.run !== 'object') cur.run = {};
+      delete cur.run[si.slot];
+      if (ok && cur.s.indexOf(si.slot) === -1) cur.s.push(si.slot);
+      localStorage.setItem(LS.snsSlot, JSON.stringify(cur));
+    } catch(e){}
     snsAutoRunning = false;
   }
 
